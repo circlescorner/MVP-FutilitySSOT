@@ -1,4 +1,4 @@
-name: Auto-apply MASTER patches
+name: Auto-apply MASTER patches (upload-only)
 
 on:
   push:
@@ -27,9 +27,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run patch applier
+      - name: Apply patches into working tree (no commits here)
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           bash scripts/apply_master_patches_ci.sh
+
+      - name: Create PR with changes (commits for you)
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Auto: fold v3.1-v3.4 canon into MASTER"
+          title: "Auto: Update MASTER to v3.4 canon"
+          body: |
+            This PR was generated automatically by GitHub Actions.
+            It normalizes docs/master.md -> docs/MASTER.md, fixes END MASTER marker,
+            then applies 0001..0004 patches sequentially.
+          branch: "auto/apply-master-patches"
+          delete-branch: true
