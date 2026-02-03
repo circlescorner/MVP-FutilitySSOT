@@ -11,8 +11,7 @@ on:
       - "docs/master.md"
       - "docs/MASTER.md"
       - "scripts/apply_master_patches_ci.sh"
-      - "000*-master-*.patch words*.md"
-      - "Patches in words/**"
+      - ".github/workflows/apply-master-patches.yml"
   workflow_dispatch: {}
 
 permissions:
@@ -35,7 +34,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-- name: Apply patches into working tree (no commits here)
+      - name: Apply patches into working tree (no commits here)
         shell: bash
         run: |
           bash scripts/apply_master_patches_ci.sh
@@ -49,6 +48,6 @@ jobs:
           body: |
             This PR was generated automatically by GitHub Actions.
             It normalizes docs/master.md -> docs/MASTER.md, fixes END MASTER marker,
-            then applies 0001..0004 patches sequentially.
+            then applies patches sequentially and folds canon into MASTER.
           branch: "auto/apply-master-patches"
           delete-branch: true
