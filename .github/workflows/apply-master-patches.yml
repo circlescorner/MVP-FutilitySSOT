@@ -1,0 +1,35 @@
+name: Auto-apply MASTER patches
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "0001-master-v3.1.patch"
+      - "0002-master-v3.2.patch"
+      - "0003-master-v3.3.patch"
+      - "0004-master-v3.4.patch"
+      - "docs/master.md"
+      - "docs/MASTER.md"
+      - "scripts/apply_master_patches_ci.sh"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  apply_patches:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run patch applier
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bash scripts/apply_master_patches_ci.sh
