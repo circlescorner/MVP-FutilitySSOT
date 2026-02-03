@@ -1,0 +1,203 @@
+*** 0002-master-v3.2.patch
+diff --git a/docs/MASTER.md b/docs/MASTER.md
+index 2222222..3333333 100644
+--- a/docs/MASTER.md
++++ b/docs/MASTER.md
+@@ -1,6 +1,6 @@
+ ===============================================================================
+ 
+-FUTILITY’S — CHAT→PATCH→GIT COMPILER (MASTER v3.1)
++FUTILITY’S — CHAT→PATCH→GIT COMPILER (MASTER v3.2)
+ 
+ Purpose: "Smart patching" system that turns chat/paste into audited git PRs.
+ 
+@@ -16,6 +16,7 @@ Owner: Madison
+ 
+ ===============================================================================
+ 
+ 0) PRIME DIRECTIVES (NON-NEGOTIABLE)
+ -----------------------------------
+@@ -20,6 +21,7 @@ D0.7 Auditability: every attempt produces a trace (even failures).
+ 
+ 1) DEPLOYMENT TOPOLOGY (DIGITALOCEAN-LED)
+ ----------------------------------------
+ 
+ Always-on Control Plane:
+ 
+   - 1x 1GB droplet (always up)
+ 
+-  - Hosts: website UI, auth (PIN), job queue, orchestration, audit log
+-
+-  - No expectation of running a capable LLM locally on 1GB; keep control plane stable and boring
++  - Hosts: website UI, auth (PIN), orchestration (3-stage chain control),
++    job queue + serialization lock, audit log + budget manager, git plumbing
+ 
+   - Holds: DO API token, GitHub token, budget state, config
+ 
+@@ -27,6 +29,17 @@ Always-on Control Plane:
+ Burst Workers (ephemeral):
+ 
+   - spun up only when required
+ 
+-  - 2–8GB droplets for "medium intelligence" / heavier formatting / sandbox apply
++  - 2–8GB droplets for sandbox apply, formatting/lint/tests, and heavier processing
++
++Segregated Sandbox (default safety mechanism):
++
++  - Any change that could plausibly break the patching system MUST be executed
++    in a segregated sandbox environment first.
++  - Sandbox runs checks/apply against a fresh clone/isolated working dir.
++  - Only after sandbox success does the system push a branch + open PR.
+ 
+   - swarm mode: multiple burst workers in parallel
+ 
+   - destroyed immediately after job completion
+ 
+@@ -84,10 +97,24 @@ Rules:
+ 
+   - if still ambiguous after 3: stop at C0 and ask user to restate
+ 
+ 
+ 7) BUDGET MANAGER (DAILY LIMITS + "WORTH IT")
+ ---------------------------------------------
+ 
+ Budget types tracked daily:
+ 
+   - local compute minutes (burst worker droplet time)
+ 
+   - external API token spend
++
++Budgets are enforced at two levels:
++
++  - hourly cap
++  - daily cap
++
++Hard rule:
++
++  - The system MUST NOT exceed hourly or daily budgets without explicit user confirmation
++    on the confirm screen.
+ 
+@@ -96,7 +123,7 @@ Worth it" definition:
+ 
+ Budget behavior:
+ 
+   - if budget low: prefer questions + local-only chain; avoid swarm; avoid API
+ 
+ 
+ 8) EXECUTION LANES (YOUR NEW ESCALATION LADDER)
+ -----------------------------------------------
+ 
+ Lane 0: ALWAYS-ON 1GB CONTROL PLANE (BORING, DETERMINISTIC)
+ 
+   - No expectation of running an intelligent LLM locally on 1GB
+   - best for: orchestration, bounded questions, repo targeting preflight, git plumbing
+   - limitations: do not attempt “real reasoning” or heavy transforms here
+ 
+ 
+-Lane 1: MEDIUM BURST (single 2–8GB droplet)
++Lane 1: SINGLE HELPER BURST (DEFAULT “REAL WORK”)
+ 
+   Trigger when:
+ 
+     - patch touches multiple files
+ 
+     - patch includes code formatting/lint
+ 
+     - Stage 2 confidence < C2 but close
+ 
+     - repo needs sandbox apply to confirm
+ 
+   Purpose:
+ 
+-    - stronger local reasoning (bigger model) OR more RAM/CPU for tools
+-
+-    - run deterministic checks
+-
+-    - produce C2→C3 confidence
++    - sandbox apply (fresh clone / isolated working dir)
++    - formatting / lint / tests (deterministic checks)
++    - repo-wide operations that exceed safe base-load capacity
+ 
+ 
+-Lane 2: SWARM BURST (either 2×8GB OR 4×4GB)
++Escalation beyond SINGLE HELPER (requires confirmation):
+ 
+-  Trigger when:
++  If the system believes it needs more than 1 helper OR a larger helper tier than policy allows
++  OR external API calls, it must request explicit user confirmation with a cost/benefit summary.
+ 
+-    - uncertainty remains after Lane 1
+-
+-    - multiple competing plans exist
+-
+-    - risk is high (many files, complex edits)
+-
+-    - need multi-angle critique (planner vs critic vs fit)
+-
+-  Selection heuristic:
+-
+-    - compute "parallelism need" vs "per-agent capability need"
+-
+-    - If tasks are independent critique/votes: prefer 4×4GB (more parallel lanes)
+-
+-    - If each agent must be stronger (bigger model per agent): prefer 2×8GB
+-
+-  Output:
+-
+-    - reduced single PatchProposal/GateVerdict/ExecutionRequest
+-
+-
+-Lane 3: EXTERNAL API (last resort)
++External API (last resort; requires confirmation):
+ 
+   Trigger ONLY when ALL are true:
+ 
+     - local chain remains uncertain (Stage 2 FAIL or < C2)
+ 
+     - chain states WHY uncertainty exists (specific missing reasoning)
+ 
+     - chain predicts API materially improves confidence
+ 
+     - budget allows
+ 
+   Note:
+ 
+     - API is used to resolve ambiguity / improve plan, not to bypass gates
+ 
+@@ -150,7 +177,15 @@ Show:
+ 
+ Buttons:
+ 
+-  - EXECUTE: create PR now
++  - GO: proceed to execute (create branch, commit, push, open PR)
+ 
+   - REVISE: return to Stage 1 with feedback
+ 
+   - CANCEL: stop; nothing published
+ 
+@@ -226,9 +261,23 @@ PARTS REMOVED / SUPERSEDED
+ 
+ - Removed the claim that the 1GB always-on node “runs a kinda dumb local LLM” as a default capability statement.
+ 
+ PATCH ENTRY LOG
+ 
+ - Applied: MASTER v3.1 (Compute Ladder alignment inside core sections)
++- Applied: MASTER v3.2 (Sandbox + single helper default + hourly/daily caps + GO semantics)
++
++CHANGE SUMMARY
++
++- v3.2: Added segregated sandbox as default safety mechanism.
++- v3.2: Default compute model shifted to “single helper” burst; escalation beyond that requires explicit confirmation.
++- v3.2: Budget enforcement clarified as hourly + daily caps requiring confirm-screen approval to exceed.
++- v3.2: Confirm primary action renamed/defined as GO (creates PR; no auto-merge).
++
++PARTS REMOVED / SUPERSEDED
++
++- Superseded the prior default “swarm burst” description as a default lane; swarm is no longer default behavior in v3.2.
+ 
+ ===============================================================================
+ 
+-END MASTER v3.1
++END MASTER v3.2
+ 
+ ===============================================================================
