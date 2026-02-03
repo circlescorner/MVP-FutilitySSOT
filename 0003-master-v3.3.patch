@@ -1,36 +1,62 @@
-*** 0003-master-v3.3.patch
 diff --git a/docs/MASTER.md b/docs/MASTER.md
-index 3333333..4444444 100644
 --- a/docs/MASTER.md
 +++ b/docs/MASTER.md
-@@ -1,6 +1,6 @@
+@@ -1,7 +1,7 @@
+ NOTE: Later patches supersede earlier text. This document is intended to read as one cohesive plan after all patches are applied.
+ 
  ===============================================================================
+-FUTILITY'S — CHAT→PATCH→GIT COMPILER (MASTER v3.2)
++FUTILITY'S — CHAT→PATCH→GIT COMPILER (MASTER v3.3)
+ Purpose: "Smart patching" system that turns chat/paste into audited Git PRs.
+ Scope: Not truth-finding yet. This is a patch authoring + execution pipeline.
+ Owner: Gondor
+@@ -124,6 +124,24 @@
+   - rollback note
+   - lane selection (control plane vs burst worker vs swarm vs api)
  
--FUTILITY’S — CHAT→PATCH→GIT COMPILER (MASTER v3.2)
-+FUTILITY’S — CHAT→PATCH→GIT COMPILER (MASTER v3.3)
- 
- Purpose: "Smart patching" system that turns chat/paste into audited git PRs.
- 
-@@ -86,7 +86,7 @@ Rules:
- 
- 
- 7) BUDGET MANAGER (DAILY LIMITS + "WORTH IT")
- ---------------------------------------------
- 
- Budget types tracked daily:
- 
-   - local compute minutes (burst worker droplet time)
- 
-   - external API token spend
-@@ -94,6 +94,50 @@ Budgets are enforced at two levels:
- 
- Hard rule:
- 
-   - The system MUST NOT exceed hourly or daily budgets without explicit user confirmation
-     on the confirm screen.
- 
-+"WORTH-IT" POLICY (MECHANICAL GATE)
 +
++Panel Review (roles) — required output contract (v3.3):
++  - Preserves the philosopher / architect / security / coach pattern as "Panel Review".
++  - Panel Review runs in Lane 1 by default, and may be re-run in Lane 2/3 if escalated.
++  - Each role outputs a bounded memo:
++    * intent_interpretation (1–2 sentences)
++    * risks (max 3 bullets)
++    * recommended_plan (max 5 bullets)
++    * one_best_question (optional; max 1)
++    * confidence_0_100
++    * blocker (yes/no)
++  - Reducer outputs exactly ONE:
++    * ExecutionRequest
++    * NeedsClarification (<=3 multiple-choice questions)
++    * Blocked package (what is missing + why it matters + cheapest unblock)
++  - No debate loops. No multi-round back-and-forth between roles.
++
++
+ 5) CONFIDENCE LEVELS
+ --------------------
+ C0 Draft: intent unclear -> ask questions; do not execute
+@@ -142,45 +160,103 @@
+ 
+ 7) BUDGET MANAGER (v3.1 CANON)
+ ------------------------------
+-Budgets are enforced at two levels:
+-  1) Hourly cap
+-  2) Daily cap
+-
+-Tracked spend categories:
+-  - helper droplet runtime minutes
+-  - optional external API token spend
+-
+-"Worth it" definition (v3.2):
+-  - expected_confidence_gain >= threshold OR
+-  - risk_reduction >= threshold OR
+-  - change_class requires it (e.g., wide refactor)
+-
+-Hard rule:
+-  - The system MUST NOT exceed hourly or daily budgets without explicit user confirmation on the confirm screen.
+-
+-Budget behavior:
+-  - if budget low: prefer questions + local-only chain; avoid escalation
 +Replace vague “worth it” with a required scorecard.
 +
 +For any paid escalation (Lane 1/2/3/4), compute:
@@ -38,190 +64,168 @@ index 3333333..4444444 100644
 +WorthItScore = (ExpectedGain * RiskWeight) / EstimatedCost
 +
 +Where:
-+
-+- ExpectedGain: predicted confidence improvement (e.g., C1->C3 > C1->C2)
-+- RiskWeight: higher for protected zones, many files, core pipeline, auth/CI changes
-+- EstimatedCost: projected dollars for the lane action (include spin-up minimums)
-+
-+Rules:
-+
-+- If WorthItScore < threshold: do NOT escalate; ask better questions or reduce scope.
-+- Threshold increases as remaining daily budget decreases.
-+- Lane 3 and Lane 4 ALWAYS require explicit user approval regardless of score.
-+
-+DAILY BUDGET CAPS (v3.3 CANON)
-+
-+Daily hard cap: $5/day total.
-+
-+Split into lane-category sub-caps (default):
-+
-+- Local Burst (Lane 1–2): $3.00/day
-+- Runpod (Lane 3):        $1.50/day
-+- External API (Lane 4):  $0.50/day
++  - ExpectedGain: predicted confidence improvement (e.g., C1->C3 > C1->C2)
++  - RiskWeight: higher for protected zones, many files, core pipeline, auth/CI changes
++  - EstimatedCost: projected dollars for the lane action (include spin-up minimums)
 +
 +Rules:
++  - If WorthItScore < threshold: do NOT escalate; ask better questions or reduce scope.
++  - Threshold increases as remaining daily budget decreases.
++  - Lane 3 and Lane 4 ALWAYS require explicit user approval regardless of score.
 +
-+- System must not exceed any sub-cap without explicit approval on confirm screen.
-+- Any single job projected to exceed remaining cap requires explicit approval.
-+- If approval not granted: system must propose a cheaper alternative.
++Budget caps (v3.3 canon):
++  - Daily hard cap: $5/day total.
++  - Split into lane-category sub-caps (default):
++    * Local Burst (Lane 1–2): $3.00/day
++    * Runpod (Lane 3):        $1.50/day
++    * External API (Lane 4):  $0.50/day
 +
-@@ -112,31 +156,101 @@ Lane 0: ALWAYS-ON 1GB CONTROL PLANE (BORING, DETERMINISTIC)
-   - best for: orchestration, bounded questions, repo targeting preflight, git plumbing
-   - limitations: do not attempt “real reasoning” or heavy transforms here
- 
- 
--Lane 1: SINGLE HELPER BURST (DEFAULT “REAL WORK”)
-+Lane 1: SINGLE HELPER BURST (DEFAULT “REAL WORK”)
- 
-   Trigger when:
- 
-     - patch touches multiple files
- 
-     - patch includes code formatting/lint
- 
-     - Stage 2 confidence < C2 but close
- 
-     - repo needs sandbox apply to confirm
- 
-   Purpose:
- 
-     - sandbox apply (fresh clone / isolated working dir)
-     - formatting / lint / tests (deterministic checks)
-     - repo-wide operations that exceed safe base-load capacity
++Hard rules:
++  - The system must not exceed any sub-cap without explicit approval on the confirm screen.
++  - Any single job projected to exceed remaining cap requires explicit approval.
++  - If approval not granted: system must propose a cheaper alternative.
 +
-+  Panel Review (roles) runs in Lane 1 by default:
-+
-+    - philosopher / architect / security / coach
-+    - each role outputs a bounded memo:
-+        * intent_interpretation (1–2 sentences)
-+        * risks (max 3 bullets)
-+        * recommended_plan (max 5 bullets)
-+        * one_best_question (optional; max 1)
-+        * confidence_0_100
-+        * blocker (yes/no)
-+
-+    - reducer outputs exactly ONE:
-+        * ExecutionRequest
-+        * NeedsClarification (<=3 multiple-choice questions)
-+        * Blocked package (what is missing + why it matters + cheapest unblock)
-+
-+    - No debate loops. No multi-round back-and-forth between roles.
++Audit requirement:
++  - The audit log must record estimated vs actual spend per lane.
  
- 
--Escalation beyond SINGLE HELPER (requires confirmation):
-+Lane 2: STRONGER LOCAL BURST (TRY HARDER BEFORE GPU/API)
- 
--  If the system believes it needs more than 1 helper OR a larger helper tier than policy allows
--  OR external API calls, it must request explicit user confirmation with a cost/benefit summary.
+ 8) COMPUTE LADDER (v3.1 CANON)
+ ------------------------------
+-Lane 0: Always-on control plane (minimal; deterministic base load)
+-  - UI + orchestration + queue + audit + Git plumbing
+-  - No expectation of running a capable LLM locally
+-  - Read-only repo inspection + bounded clarifying questions (no paid compute)
+-
+-Lane 1: Single helper burst (default "real work")
+-  - Spin up ONE helper droplet (recommended 2–4GB; choose smallest that meets task needs)
+-  - Used for sandbox apply, formatting/lint/tests, and deterministic checks, then destroyed
+-
+-Lane 2+: Escalation beyond a single helper (NOT default; requires explicit confirmation)
+-  - If more than one helper, a larger tier, or an external API call is recommended:
+-    - system must present a cost/benefit summary on the confirm screen
+-    - user must explicitly approve the extra spend
+-  - If approval is not granted: downgrade to a cheaper plan (more questions, smaller helper, reduced scope) or stop at Draft
+-
+-GO / confirm semantics (v3.2 canon):
+-  - The system prepares a Proposed Execution (plan + targets + diff preview + risk + confidence + projected cost).
+-  - User sees confirm screen where GO proceeds to execute (create branch, commit, push, open PR).
++Lane 0: ALWAYS-ON CONTROL PLANE (1GB, boring, deterministic)
++  - No expectation of running an intelligent LLM locally.
++  - Responsibilities:
++    * UI (Chat + PATCHGIT)
++    * auth + sessions (PIN)
++    * queue + serialization lock
++    * audit log + budget manager
++    * repo metadata scan / file targeting preflight
++    * generates bounded clarifying questions (NO LLM REQUIRED)
++  - Allowed actions:
++    * read-only repo inspection
++    * prepare candidate plans
++    * NEVER spins paid compute unless “worth-it” gates pass
++
++Lane 1: SINGLE HELPER BURST (default “real work”)
++  - Recommended size: 2–4GB (choose smallest that meets task needs)
++  - Purpose:
++    * sandbox apply (fresh clone / isolated working dir)
++    * formatting / lint / tests (deterministic checks)
++    * Panel Review memos + reducer (architect/security/philosopher/coach)
++    * compile ops -> canonical executable patch artifact (e.g., unified diff)
++  - Outcome target: reach C2 (Apply) or C3 (Ship-ready PR)
++
++Lane 2: STRONGER LOCAL BURST (try harder before GPU/API)
 +  - Recommended topology: 2×8GB ephemeral helpers
 +  - Trigger when (any true):
-+      * Lane 1 still < C2 after one pass
-+      * multiple plausible plans exist and choice is risky
-+      * apply/check failures need non-trivial repair
-+      * protected-zone changes are explicitly requested and require deeper critique
-+
++    * Lane 1 still < C2 after one pass
++    * multiple plausible plans exist and choice is risky
++    * apply/check failures need non-trivial repair
++    * protected-zone changes are explicitly requested and require deeper critique
 +  - Constraints:
-+      * one Lane 2 attempt per job (no loops)
-+      * produce reduced single canonical artifact (ExecutionRequest or Blocked package)
- 
- 
--External API (last resort; requires confirmation):
-+Lane 3: RUNPOD GPU BURST (WORTH-IT GATED, REQUIRES APPROVAL)
++    * one Lane 2 attempt per job (no loops)
++    * produce reduced single canonical artifact (ExecutionRequest or Blocked package)
 +
++Lane 3: RUNPOD GPU BURST (worth-it gated; requires approval)
 +  - Purpose:
-+      * deep reasoning / long-context synthesis / heavy transforms
-+      * run “big local model” inference using GPU resources
-+      * resolve complex patch repair cases that Lane 2 cannot fix safely
-+
++    * deep reasoning / long-context synthesis / heavy transforms
++    * run “big local model” inference using GPU resources
++    * resolve complex patch repair cases that Lane 2 cannot fix safely
 +  - Hard rule:
-+      * Lane 3 MUST NOT run automatically.
-+      * Lane 3 requires an explicit “Approve Runpod spend” toggle on the confirm screen.
-+
++    * Lane 3 MUST NOT run automatically.
++    * Lane 3 requires an explicit “Approve Runpod spend” toggle on the confirm screen.
 +  - Trigger gate (ALL must be true):
-+      * Lane 1 attempted (unless change_class is trivial DOC_ONLY)
-+      * Lane 2 attempted OR explicitly skipped with a written reason
-+      * System can name the blockage precisely (specific missing reasoning/tool capability)
-+      * System predicts Runpod materially improves confidence OR reduces risk
-+      * Estimated cost fits remaining budget OR user approves extra spend
-+
++    * Lane 1 attempted (unless change_class is trivial DOC_ONLY)
++    * Lane 2 attempted OR explicitly skipped with a written reason
++    * system can name the blockage precisely (specific missing reasoning/tool capability)
++    * system predicts Runpod materially improves confidence OR reduces risk
++    * estimated cost fits remaining budget OR user approves extra spend
 +  - Required outputs:
-+      * Must address Panel Review memos explicitly
-+      * Must output exactly ONE of:
-+          - ExecutionRequest (ready)
-+          - NeedsClarification (<=3 multiple-choice questions)
-+          - Blocked package (what is missing + why it matters + cheapest unblock)
++    * must address Panel Review memos explicitly
++    * must output exactly ONE of:
++      - ExecutionRequest (ready)
++      - NeedsClarification (<=3 multiple-choice questions)
++      - Blocked package (what is missing + why it matters + cheapest unblock)
 +
-+
-+Lane 4: EXTERNAL MODEL API (LAST RESORT, REQUIRES APPROVAL)
- 
-   Trigger ONLY when ALL are true:
- 
--    - local chain remains uncertain (Stage 2 FAIL or < C2)
--
--    - chain states WHY uncertainty exists (specific missing reasoning)
--
--    - chain predicts API materially improves confidence
--
--    - budget allows
++Lane 4: EXTERNAL MODEL API (last resort; requires approval)
++  - Trigger ONLY when ALL are true:
 +    1. Lane 3 was attempted and still blocked OR Lane 3 is unavailable
-+    2. System states WHY uncertainty remains (specific missing reasoning)
-+    3. System predicts API materially improves the outcome vs Lane 3
-+    4. User approves “Approve API spend” on confirm screen
++    2. system states WHY uncertainty remains (specific missing reasoning)
++    3. system predicts API materially improves the outcome vs Lane 3
++    4. user approves “Approve API spend” on confirm screen
++  - API is used to resolve ambiguity / improve plan, NOT to bypass gates.
++
++GO / confirm semantics:
+   - GO publishes only by creating a PR (default). Auto-merge remains later opt-in.
  
-   Note:
+ 9) CONFIRM SCREEN (REQUIRED BEFORE PR)
+@@ -188,18 +264,23 @@
+ Confirm screen is REQUIRED before creating a PR.
  
-     - API is used to resolve ambiguity / improve plan, not to bypass gates
- 
-@@ -156,6 +270,18 @@ Confirm screen must include:
- 
- New required toggles:
- 
+ Must show:
+-  - intent summary (what Conductor believes you meant)
++  - intent summary
+   - explicit targets list
+-  - diff preview (collapsed + expandable)
++  - diff preview (from real sandbox apply whenever non-trivial)
+   - confidence level (C0..C3) + reasons
+-  - projected cost + remaining budget (hourly/daily)
+-
+-If projected cost exceeds remaining budget OR requires escalation beyond 1 helper OR external API:
+-  - must show WHY escalation is needed
+-  - what it will cost (estimate)
+-  - what confidence gain is expected
+-  - an explicit "Approve extra spend" toggle
+-  - without approval: downgrade to cheaper plan or stop at Draft
++  - WorthItScore summary (inputs + threshold result)
++  - spend summary + remaining budget (daily + sub-caps)
++
++Approval toggles (v3.3):
 +  - “Approve Runpod spend” (only shown if Lane 3 recommended)
 +  - “Approve API spend” (only shown if Lane 4 recommended)
 +
- Hard rule:
- 
--  - Without the relevant approval toggle enabled, the system MUST downgrade:
++Hard rule:
 +  - Without the relevant approval toggle enabled, the system MUST downgrade:
++    * ask questions
++    * reduce scope
++    * use cheaper lane
++    * or stop at Draft (C0/C1)
  
-     - ask questions
- 
-     - reduce scope
- 
-     - use cheaper lane
- 
-     - or stop at Draft (C0/C1)
- 
-@@ -226,6 +352,33 @@ PATCH ENTRY LOG
- - Applied: MASTER v3.1 (Compute Ladder alignment inside core sections)
- - Applied: MASTER v3.2 (Sandbox + single helper default + hourly/daily caps + GO semantics)
-+- Applied: MASTER v3.3 (Lane 3 Runpod + Lane 4 API + Worth-It gate + Panel Review + $5/day sub-caps)
- 
- CHANGE SUMMARY
- 
- - v3.2: Added segregated sandbox as default safety mechanism.
- - v3.2: Default compute model shifted to “single helper” burst; escalation beyond that requires explicit confirmation.
- - v3.2: Budget enforcement clarified as hourly + daily caps requiring confirm-screen approval to exceed.
- - v3.2: Confirm primary action renamed/defined as GO (creates PR; no auto-merge).
+ Buttons:
+   - GO: proceed to execute (create branch, commit, push, open PR)
+@@ -220,6 +301,13 @@
+ Failure handling:
+   - abort safely; do not partially publish
+   - record full logs + reason in audit
 +
-+- v3.3: Lanes redefined: Lane 2 (2×8GB) “try harder locally”, Lane 3 Runpod GPU burst, Lane 4 external API last resort.
-+- v3.3: Added required WorthItScore scorecard for paid escalation; Lane 3/4 always require explicit approval.
-+- v3.3: Added $5/day total cap with per-category sub-caps (Local Burst / Runpod / API).
-+- v3.3: Panel Review role memos formalized with strict reducer outputs (ExecutionRequest / NeedsClarification / Blocked).
-+
-+PARTS REMOVED / SUPERSEDED
-+
-+- Superseded v3.2’s generic “external API last resort” wording with explicit Lane 4 semantics and required approval toggle.
-+- Superseded v3.2’s “escalation beyond single helper” blanket wording with explicit Lane 2/3/4 ladder and gates.
++Auditability — required trace items for Lane 3 (v3.3):
++  - why Lane 3 was recommended (blockage + expected gain)
++  - cost estimate + actual spend
++  - panel memos + reducer output
++  - final canonical artifact (ExecutionRequest / NeedsClarification / Blocked)
++  - explicit record of user approval toggle state
  
- PARTS REMOVED / SUPERSEDED
- 
- - Removed the claim that the 1GB always-on node “runs a kinda dumb local LLM” as a default capability statement.
- - Superseded the prior default “swarm burst” description as a default lane; swarm is no longer default behavior in v3.2.
- 
+ 11) SAFETY / "WON'T BREAK THE SYSTEM"
+ -------------------------------------
+@@ -252,4 +340,4 @@
+ - Superseded: any default assumption of swarm/multiple helpers without explicit user confirmation. Beyond one helper requires confirmation (v3.2).
  ===============================================================================
  
 -END MASTER v3.2
 +END MASTER v3.3
- 
- ===============================================================================
