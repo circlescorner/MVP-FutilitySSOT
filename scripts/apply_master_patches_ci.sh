@@ -4,97 +4,82 @@ set -euo pipefail
 die() { echo "ERROR: $*" >&2; exit 1; }
 info() { echo "==> $*"; }
 
-# Canonical master path normalization
 MASTER_LOWER="docs/master.md"
 MASTER_UPPER="docs/MASTER.md"
 
-# Ledger of what patch number has been applied (kept in-repo so CI knows)
-LEDGER_DIR=".futilitys"
-LEDGER_FILE="${LEDGER_DIR}/patch_ledger.txt"
-
-# Discover patches dynamically in repo root: 0001-*.patch, 0002-*.patch, ...
-# (Your rule: as long as a patch name number is greater than the patch before, it should work.)
-mapfile -t ALL_PATCHES < <(ls -1 [0-9][0-9][0-9][0-9]-*.patch 2>/dev/null | sort || true)
-
-if [[ ${#ALL_PATCHES[@]} -eq 0 ]]; then
-  info "No patches found matching ####-*.patch in repo root. Nothing to do."
-  exit 0
-fi
-
-# Normalize MASTER filename
+# Find MASTER
 if [[ -f "$MASTER_UPPER" ]]; then
   MASTER="$MASTER_UPPER"
 elif [[ -f "$MASTER_LOWER" ]]; then
-  info "Renaming ${MASTER_LOWER} -> ${MASTER_UPPER} for canonical path"
-  mkdir -p docs
-  git mv -f "$MASTER_LOWER" "$MASTER_UPPER" || mv -f "$MASTER_LOWER" "$MASTER_UPPER"
+  MASTER="$MASTER_LOWER"
+else
+  die "Master not found at docs/master.md or docs/MASTER.md"
+fi
+
+info "Normalize master filename + END marker"
+mkdir -p docs
+
+if [[ "$MASTER" == "$MASTER_LOWER" ]]; then
+  git mv "$MASTER_LOWER" "$MASTER_UPPER"
   MASTER="$MASTER_UPPER"
-else
-  die "Could not find ${MASTER_LOWER} or ${MASTER_UPPER}. Create docs/MASTER.md first."
 fi
 
-# Read last-applied patch number from ledger.
-# If ledger doesn't exist, bootstrap:
-# - If your MASTER is already at v3.4 AND a 0004 patch exists, assume 0004 already applied (your stated current state).
-# - Otherwise start at 0000.
-LAST_APPLIED="0000"
-if [[ -f "$LEDGER_FILE" ]]; then
-  LAST_APPLIED="$(head -n 1 "$LEDGER_FILE" | tr -d '\r' | sed 's/[^0-9].*$//')"
-  [[ "$LAST_APPLIED" =~ ^[0-9]{4}$ ]] || die "Ledger file ${LEDGER_FILE} is invalid. Expected a 4-digit number on line 1."
-else
-  if grep -q "END MASTER v3\.4" "$MASTER" && ls -1 0004-*.patch >/dev/null 2>&1; then
-    LAST_APPLIED="0004"
-  fi
-fi
+# Fix typo variants (xv3 -> v3) if present
+perl -pi -e 's/END MASTER x?v3/END MASTER v3/g' "$MASTER" || true
 
-info "Last applied patch number: ${LAST_APPLIED}"
+# Ensure newline at EOF
+python3 - <<'PY'
+p="docs/MASTER.md"
+with open(p,'rb') as f:
+    b=f.read()
+if b and not b.endswith(b'\n'):
+    with open(p,'ab') as f:
+        f.write(b'\n')
+PY
 
-# Filter patches strictly greater than LAST_APPLIED (numeric compare)
-last_num=$((10#$LAST_APPLIED))
-TO_APPLY=()
-for p in "${ALL_PATCHES[@]}"; do
-  n="${p:0:4}"
-  [[ "$n" =~ ^[0-9]{4}$ ]] || continue
-  num=$((10#$n))
-  if (( num > last_num )); then
-    TO_APPLY+=("$p")
-  fi
-done
+# Discover patches dynamically in repo root
+mapfile -t PATCHES < <(ls -1 [0-9][0-9][0-9][0-9]-*.patch 2>/dev/null | sort || true)
 
-if [[ ${#TO_APPLY[@]} -eq 0 ]]; then
-  info "No new patches > ${LAST_APPLIED}. Nothing to do."
+if [[ ${#PATCHES[@]} -eq 0 ]]; then
+  info "No patch files found matching ####-*.patch in repo root — nothing to do."
   exit 0
 fi
 
-info "Patches to apply (in order):"
-printf '  - %s\n' "${TO_APPLY[@]}"
+info "Sanitize patch files (strip any junk before first 'diff --git')"
+TMPDIR="$(mktemp -d)"
+trap 'rm -rf "$TMPDIR"' EXIT
 
-# Apply sequentially with CRLF-safe sanitation
-SANITIZED_DIR="$(mktemp -d)"
-trap 'rm -rf "$SANITIZED_DIR"' EXIT
+sanitize_patch() {
+  local in="$1"
+  local out="$2"
+  awk 'BEGIN{p=0} /^diff --git /{p=1} {if(p) print}' "$in" > "$out"
+  grep -q '^diff --git ' "$out" || return 1
+  return 0
+}
 
-highest_applied="$LAST_APPLIED"
-
-for p in "${TO_APPLY[@]}"; do
+info "Apply patches in ascending order; skip ones already applied"
+for p in "${PATCHES[@]}"; do
   bn="$(basename "$p")"
-  n="${bn:0:4}"
+  sp="$TMPDIR/$bn"
 
-  # sanitize CRLF -> LF (git apply fails on CRLF diffs sometimes)
-  sp="${SANITIZED_DIR}/${bn}"
-  sed 's/\r$//' "$p" > "$sp"
+  if ! sanitize_patch "$p" "$sp"; then
+    die "Patch '$bn' is missing a 'diff --git' header. Not a valid unified diff."
+  fi
 
-  info "Check: ${bn}"
-  git apply --check "$sp" || die "git apply --check failed for ${bn} (context mismatch or invalid diff)."
+  info "Check: $bn"
+  if git apply --check "$sp" >/dev/null 2>&1; then
+    info "Apply: $bn"
+    git apply "$sp" || die "git apply failed for $bn"
+    continue
+  fi
 
-  info "Apply: ${bn}"
-  git apply "$sp" || die "git apply failed for ${bn}"
+  # If reverse-check passes, it means the patch is already in the file(s); skip it.
+  if git apply --reverse --check "$sp" >/dev/null 2>&1; then
+    info "Skip (already applied): $bn"
+    continue
+  fi
 
-  highest_applied="$n"
+  die "Patch '$bn' does not apply cleanly and is not already applied (context mismatch)."
 done
 
-# Update ledger so future runs only apply higher-numbered patches
-mkdir -p "$LEDGER_DIR"
-echo "$highest_applied" > "$LEDGER_FILE"
-
-info "Updated ledger: ${LEDGER_FILE} = ${highest_applied}"
-info "Done."
+info "Done. If any changes were made, the PR step will commit them."
