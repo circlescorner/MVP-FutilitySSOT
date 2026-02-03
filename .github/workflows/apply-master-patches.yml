@@ -11,6 +11,8 @@ on:
       - "docs/master.md"
       - "docs/MASTER.md"
       - "scripts/apply_master_patches_ci.sh"
+      - "000*-master-*.patch words*.md"
+      - "Patches in words/**"
   workflow_dispatch: {}
 
 permissions:
@@ -27,7 +29,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply patches into working tree (no commits here)
+      - name: Configure git identity
+        shell: bash
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+- name: Apply patches into working tree (no commits here)
         shell: bash
         run: |
           bash scripts/apply_master_patches_ci.sh
