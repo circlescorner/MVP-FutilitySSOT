@@ -1,0 +1,223 @@
+diff –git a/docs/MASTER.md b/docs/MASTER.md
+— a/docs/MASTER.md
++++ b/docs/MASTER.md
+@@ -1,7 +1,7 @@
+NOTE: Later patches supersede earlier text. This document is intended to read as one cohesive plan after all patches are applied.
+
+===============================================================================
+-FUTILITY’S — CHAT→PATCH→GIT COMPILER (MASTER v3.4)
++FUTILITY’S — CHAT→PATCH→GIT COMPILER (MASTER v3.5)
+Purpose: “Smart patching” system that turns chat/paste into audited Git PRs.
+Scope: Not truth-finding yet. This is a patch authoring + execution pipeline.
+Owner: Gondor
+@@ -37,6 +37,29 @@
+—END—
+
+1. DEPLOYMENT TOPOLOGY (DIGITALOCEAN-LED)
+   +—————————————–
+
+- 
+
++Repo Configuration (v3.5 canon):
+
+- - The system works with ONE target repo at a time per session.
+- - Required repo metadata (stored in control plane config):
+- - GitHub repo URL (owner/repo format)
+- - default base branch (typically “main” or “master”)
+- - protected file patterns (globs for executor/auth/CI paths)
+- - required checks configuration (format/lint/test commands)
+- - Control plane maintains a shallow clone for read-only inspection (Lane 0).
+- - Helper workers and sandbox environments create fresh full clones as needed.
+- - Repo switching requires explicit user action (not automatic).
+- 
+
++Session Model (v3.5 canon):
+
+- - Each user session is tied to:
+- - a PIN-authenticated user identity
+- - a specific target repo
+- - budget state (daily spend tracking)
+- - Sessions persist across reconnects (stored in SQLite).
+- - Session timeout: 24 hours of inactivity.
+- - On timeout: session is archived; budget counters reset at midnight UTC.
+- 
+
+## +Physical Deployment:
+
+Always-on Control Plane (stable, boring, always up):
+
+- 1x always-on droplet (minimal viable size)
+  @@ -125,8 +148,11 @@
+- rollback note
+- lane selection (control plane vs burst worker vs swarm vs api)
+- 
+
+-Panel Review (roles) — required output contract (v3.3):
++Panel Review (roles) — required output contract (v3.5):
+
+- - Panel Review is OPTIONAL and gated by change_class risk assessment.
+- - Low-risk changes (DOC_ONLY, single-file non-critical edits) MAY skip Panel Review.
+- - Medium+ risk changes (multi-file, protected zones, core logic) MUST run Panel Review.
+- - Control plane orchestrator decides whether to invoke Panel Review based on PatchProposal risk flags.
+  - Preserves the philosopher / architect / security / coach pattern as “Panel Review”.
+  - Panel Review runs in Lane 1 by default, and may be re-run in Lane 2/3 if escalated.
+  - Each role outputs a bounded memo:
+    @@ -140,7 +166,6 @@
+    - ExecutionRequest
+    - NeedsClarification (<=3 multiple-choice questions)
+    - Blocked package (what is missing + why it matters + cheapest unblock)
+
+- - No debate loops. No multi-round back-and-forth between roles.
+
+1. CONFIDENCE LEVELS
+   @@ -193,6 +218,24 @@
+- prepare candidate plans
+- NEVER spins paid compute unless “worth-it” gates pass
+
++Lane 0 Intelligence Clarification (v3.5):
+
+- - Lane 0 does NOT need an LLM for basic operations:
+- - parse PATCHGIT envelopes (deterministic)
+- - validate PatchOps JSON schema (deterministic)
+- - scan repo metadata / file lists (deterministic)
+- - enforce budget caps (deterministic)
+- - Lane 0 MAY use a trivial local model (1-3B params) for:
+- - generating bounded clarifying questions from ambiguous chat input
+- - risk classification heuristics (keyword matching + simple rules)
+- - If no local model is available:
+- - PATCHGIT mode still works (deterministic parsing)
+- - Chat mode must immediately escalate to Lane 1 for intent interpretation
+- - Canon rule: Lane 0 never makes “creative” or “reasoning” decisions.
+- All reasoning (Panel Review, plan selection, diff generation) happens in Lane 1+.
+- 
+
++Failure Recovery (Lane 0 responsibility; v3.5):
+
+- - If a job fails at any stage, Lane 0 records the failure in audit log and notifies user.
+- - User may RETRY the same job (new job_id, fresh budget deduction) or REVISE intent.
+- 
+
+Lane 1: SINGLE HELPER BURST (default “real work”)
+
+- Recommended size: 2–4GB (choose smallest that meets task needs)
+- Purpose:
+  @@ -200,7 +243,11 @@
+  - formatting / lint / tests (deterministic checks)
+  - Panel Review memos + reducer (architect/security/philosopher/coach)
+  - compile ops -> canonical executable patch artifact (e.g., unified diff)
+- - Outcome target: reach C2 (Apply) or C3 (Ship-ready PR)
+
+- - Outcome target: reach C2 (Apply) or C3 (Ship-ready PR), OR
+- - Explicit failure modes:
+- - NeedsClarification (return to user with <=3 questions)
+- - Blocked (cannot proceed; name the blockage + cheapest unblock)
+- - EscalateToLane2 (recommend Lane 2 with justification)
+
+Lane 2: STRONGER LOCAL BURST (try harder before GPU/API)
+
+- Recommended topology: 2×8GB ephemeral helpers
+  @@ -273,6 +320,23 @@
+- REVISE: return to Stage 1 with feedback
+- CANCEL: stop; nothing published
+
++Confirm Screen Behavior (v3.5 canon):
+
+- - If user clicks GO:
+- - Executor runs immediately (no further confirmation)
+- - Executor creates branch + commits + pushes + opens PR
+- - On success: user sees PR link + audit trace
+- - On failure: user sees error message + full logs + RETRY option
+- - If user clicks REVISE:
+- - System returns to Stage 1 with user’s feedback
+- - Previous job is marked “revised” in audit; new job_id allocated
+- - If user clicks CANCEL:
+- - Job is marked “cancelled” in audit
+- - No branch/commit/PR is created
+- - Budget is NOT deducted (no executor run = no cost)
+- 
+
++Post-PR Behavior (v3.5 canon):
+
+- - After PR is created, the system’s job is DONE.
+- - User merges the PR manually (or via GitHub’s UI/automation).
+- - System does NOT auto-merge by default (C4 auto-merge is future opt-in).
+- 
+
+1. EXECUTOR (DETERMINISTIC PATCH COMPILER)
+
+-----
+
+Given ExecutionRequest:
+@@ -285,6 +349,14 @@
+
+- create PR via GitHub CLI (gh) as the primary mechanism
+
+Failure handling:
+
+- - If any executor step fails:
+- - acquire lock (if lock held by another job: queue and wait)
+- - pull latest (if network fails: abort; log error; RETRY available)
+- - allocate patch number (if filesystem error: abort; log error)
+- - write patches/NNN-*.md (if write fails: abort; log error; check disk space)
+- - apply file edits (if validation fails: abort; log error; this should never happen after sandbox)
+- - create branch (if branch exists: abort; log conflict; suggest new branch name)
+- - push branch (if push rejected: abort; log reason; check auth/network)
+- - create PR (if gh CLI fails: abort; log reason; provide manual PR creation instructions)
+
+- abort safely; do not partially publish
+- record full logs + reason in audit
+
+@@ -342,7 +414,26 @@
+
+- size bounds per patch (avoid accidental megadumps)
+- job serialization lock (prevents race/push conflicts)
+
++Protected Zones — Explicit Rules (v3.5):
+
+- - Protected zone edits MUST trigger Panel Review (no skip allowed).
+- - Protected zone edits require C3 confidence minimum (C2 is insufficient).
+- - If a PatchProposal targets a protected zone:
+- - Stage 2 Gate MUST verify explicit user intent (not inferred)
+- - Confirm screen MUST highlight protected zone changes prominently
+- - WorthItScore threshold is DOUBLED for protected zone changes
+- - Protected zone patterns (default; configurable per repo):
+- - **/executor/** (patch execution code)
+- - **/auth/** (authentication/session logic)
+- - **/.github/workflows/** (CI/CD automation)
+- - **/secrets*.{yml,yaml,json,env} (any secrets-like filenames)
+- 
+
++Size Bounds (v3.5 canon):
+
+- - Maximum files per patch: 50 files (configurable; default conservative)
+- - Maximum total diff size: 10,000 lines added+removed (configurable)
+- - If proposed change exceeds bounds:
+- - Stage 2 Gate flags as FAIL with reason “exceeds size bounds”
+- - System asks user to split into multiple smaller patches
+
+1. STORAGE MODEL (SQLITE + ARTIFACTS) (v3.4 CANON)
+
+-----
+
+# Canon decision:
+@@ -406,12 +497,16 @@
+
+CHANGE SUMMARY (AUTOGENERATED BY PATCH SERIES)
+
+- v3.1: Reorganized MASTER into a single coherent structure; clarified no capable LLM is expected on the always-on node; folded in v3.1 compute ladder concepts.
+- v3.2: Added segregated sandbox as default safety mechanism; defined single helper worker default; added GO semantics with explicit approval for extra spend beyond one helper.
+- v3.3: Updated escalation ladder: Lane 3 = Runpod GPU burst (worth-it gated) and Lane 4 = external API (last resort); replaced vague worth-it with WorthItScore scorecard; replaced earlier budget cap with $5/day cap + lane sub-caps; formalized Panel Review role memos + reducer output contract; added required audit trace items for Lane 3.
+- v3.4: Canonized Hybrid Patch representation (PatchOps JSON + DiffPreview unified diff); locked deterministic edit semantics (no fuzzy modify; marker-bounded REPLACE_BLOCK); standardized PR creation via GitHub CLI (gh); specified SQLite job metadata + artifacts storage model (droplet disk vs object storage); amended confirm screen to display PatchOps summary + DiffPreview + spend and approval toggles.
+  +- v3.5: Specified repo configuration model (one target repo per session) and session model (PIN auth + 24h timeout); clarified Lane 0 intelligence requirements (deterministic parsing + optional 1-3B local model); made Panel Review optional for low-risk changes; added explicit failure recovery paths; detailed executor failure handling per-step; canonized protected zone rules (C3 minimum, doubled WorthItScore, mandatory Panel Review); added size bounds (50 files, 10k lines diff); clarified confirm screen behavior and post-PR behavior (user merges manually).
+  ===============================================================================
+
+PARTS REMOVED / SUPERSEDED (LOG)
+
+- Superseded: freeform paragraph-edit semantics. Executor accepts only validated PatchOps operations; REPLACE_BLOCK requires explicit markers (v3.4).
+- Superseded: any PR creation path that bypasses deterministic executor control. LLMs never run git or gh directly; executor uses gh CLI as the standard PR mechanism (v3.4).
+  +- Superseded: assumption that Panel Review runs on ALL changes. Panel Review is now risk-gated; low-risk changes may skip it (v3.5).
+  +- Superseded: vague “failure handling”. Executor now has per-step failure semantics with explicit abort conditions and user-facing RETRY options (v3.5).
+  ===============================================================================
+
+-END MASTER v3.4
++END MASTER v3.5
