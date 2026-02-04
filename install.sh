@@ -686,87 +686,198 @@ function authMiddleware(req, res, next) {
 app.use(authMiddleware);
 
 //=============================================================================
-// STYLES
+// STYLES (Mobile-first, big touch targets for dirty hands)
 //=============================================================================
 
 const STYLES = `
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
-        font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         max-width: 900px;
         margin: 0 auto;
-        padding: 20px;
+        padding: 15px;
         background: #0d1117;
         color: #c9d1d9;
         line-height: 1.6;
+        font-size: 16px;
     }
-    h1, h2, h3 { color: #58a6ff; }
+    h1 { color: #58a6ff; font-size: 24px; margin: 10px 0; }
+    h2 { color: #58a6ff; font-size: 20px; }
     a { color: #58a6ff; }
     .container {
         background: #161b22;
         border: 1px solid #30363d;
-        border-radius: 6px;
+        border-radius: 12px;
         padding: 20px;
-        margin: 20px 0;
+        margin: 15px 0;
     }
     input, textarea, select {
         width: 100%;
-        padding: 10px;
+        padding: 16px;
         margin: 8px 0;
         background: #0d1117;
-        border: 1px solid #30363d;
-        border-radius: 6px;
+        border: 2px solid #30363d;
+        border-radius: 12px;
         color: #c9d1d9;
         font-family: inherit;
-        font-size: 14px;
+        font-size: 18px;
     }
-    textarea { min-height: 150px; resize: vertical; }
+    input:focus, textarea:focus { border-color: #58a6ff; outline: none; }
+    textarea { min-height: 120px; resize: vertical; }
+
+    /* Big touch-friendly buttons */
     button, .btn {
         background: #238636;
         color: white;
         border: none;
-        padding: 12px 24px;
-        border-radius: 6px;
+        padding: 18px 32px;
+        border-radius: 12px;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 18px;
         font-weight: 600;
         text-decoration: none;
         display: inline-block;
-        margin: 4px;
+        margin: 6px;
+        min-height: 56px;
+        touch-action: manipulation;
     }
     button:hover, .btn:hover { background: #2ea043; }
+    button:active, .btn:active { transform: scale(0.98); }
     .btn-secondary { background: #30363d; }
     .btn-secondary:hover { background: #484f58; }
+    .btn-large {
+        width: 100%;
+        padding: 24px;
+        font-size: 22px;
+        margin: 10px 0;
+        min-height: 80px;
+    }
+
+    /* Action buttons - voice & photo */
+    .action-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin: 20px 0;
+    }
+    .action-btn {
+        background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+        border-radius: 16px;
+        padding: 30px 20px;
+        text-align: center;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .action-btn.photo { background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%); }
+    .action-btn .icon { font-size: 48px; margin-bottom: 10px; }
+    .action-btn .label { font-size: 18px; font-weight: 600; }
+
+    /* Voice recording states */
+    .btn-voice { background: #238636; }
+    .btn-voice.recording {
+        background: #f85149;
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
     .success { color: #3fb950; }
     .error { color: #f85149; }
     .warning { color: #d29922; }
     .info { color: #58a6ff; }
-    .meta { color: #8b949e; font-size: 12px; }
+    .meta { color: #8b949e; font-size: 14px; }
+
     .capture-item {
-        border-left: 3px solid #30363d;
-        padding: 10px 15px;
-        margin: 10px 0;
+        border-left: 4px solid #30363d;
+        padding: 15px;
+        margin: 12px 0;
         background: #0d1117;
+        border-radius: 0 12px 12px 0;
     }
-    .feedback-btns { margin-top: 10px; }
+    .feedback-btns { margin-top: 12px; display: flex; gap: 10px; }
     .feedback-btns button {
-        padding: 5px 15px;
-        font-size: 18px;
+        padding: 12px 24px;
+        font-size: 24px;
         background: transparent;
-        border: 1px solid #30363d;
+        border: 2px solid #30363d;
+        min-height: 50px;
+        flex: 1;
     }
     .feedback-btns button:hover { background: #30363d; }
-    nav { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #30363d; }
-    nav a { margin-right: 20px; text-decoration: none; }
+    .feedback-btns button.selected-up { background: #238636; border-color: #238636; }
+    .feedback-btns button.selected-down { background: #f85149; border-color: #f85149; }
+
+    nav {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #30363d;
+        flex-wrap: wrap;
+    }
+    nav a {
+        padding: 12px 16px;
+        background: #21262d;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 14px;
+    }
+    nav a:hover { background: #30363d; }
+
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
     .stat-box {
-        display: inline-block;
         background: #0d1117;
-        padding: 15px 25px;
-        margin: 5px;
-        border-radius: 6px;
+        padding: 20px 15px;
+        border-radius: 12px;
         text-align: center;
     }
-    .stat-number { font-size: 24px; font-weight: bold; color: #58a6ff; }
+    .stat-number { font-size: 28px; font-weight: bold; color: #58a6ff; }
+    .stat-label { font-size: 12px; color: #8b949e; margin-top: 5px; }
+
+    /* Camera/file input styling */
+    .file-input-wrapper {
+        position: relative;
+        overflow: hidden;
+        display: block;
+    }
+    .file-input-wrapper input[type=file] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+
+    /* Transcript preview */
+    .transcript-preview {
+        background: #0d1117;
+        border: 2px dashed #30363d;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 15px 0;
+        min-height: 100px;
+        font-size: 18px;
+        line-height: 1.5;
+    }
+    .transcript-preview.has-content { border-style: solid; border-color: #238636; }
+    .transcript-preview .placeholder { color: #6e7681; font-style: italic; }
+
+    @media (max-width: 500px) {
+        .stat-grid { grid-template-columns: repeat(3, 1fr); }
+        .action-grid { grid-template-columns: 1fr; }
+        .action-btn { min-height: 100px; }
+    }
 `;
 
 //=============================================================================
@@ -828,74 +939,91 @@ app.get('/', (req, res) => {
     };
 
     const recentCaptures = db.prepare(`
-        SELECT * FROM captures ORDER BY created_at DESC LIMIT 5
+        SELECT * FROM captures ORDER BY created_at DESC LIMIT 3
     `).all();
 
     res.send(`
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Futility's - Dashboard</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Futility's</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
             <style>${STYLES}</style>
         </head>
         <body>
             <nav>
-                <a href="/">Dashboard</a>
-                <a href="/capture">New Capture</a>
-                <a href="/upload">Upload File</a>
+                <a href="/">Home</a>
+                <a href="/voice">Voice</a>
+                <a href="/photo">Photo</a>
                 <a href="/browse">Browse</a>
-                <a href="/logout">Logout</a>
+                <a href="/logout">Out</a>
             </nav>
 
-            <h1>Futility's Dashboard</h1>
+            <h1>Futility's</h1>
 
+            <!-- BIG ACTION BUTTONS - The main event -->
+            <div class="action-grid">
+                <a href="/voice" class="action-btn" style="text-decoration:none; color:white;">
+                    <div class="icon">🎤</div>
+                    <div class="label">SPEAK</div>
+                </a>
+                <a href="/photo" class="action-btn photo" style="text-decoration:none; color:white;">
+                    <div class="icon">📷</div>
+                    <div class="label">PHOTO</div>
+                </a>
+            </div>
+
+            <!-- Stats -->
             <div class="container">
-                <div class="stat-box">
-                    <div class="stat-number">${stats.captures}</div>
-                    <div class="meta">Total Captures</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number">${stats.today}</div>
-                    <div class="meta">Today</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number">${stats.feedback}</div>
-                    <div class="meta">Feedback</div>
+                <div class="stat-grid">
+                    <div class="stat-box">
+                        <div class="stat-number">${stats.captures}</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${stats.today}</div>
+                        <div class="stat-label">Today</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${stats.feedback}</div>
+                        <div class="stat-label">Feedback</div>
+                    </div>
                 </div>
             </div>
 
+            <!-- Quick type option -->
             <div class="container">
-                <h2>Quick Capture</h2>
                 <form method="POST" action="/capture">
-                    <textarea name="content" placeholder="What do you want to capture? (observations, notes, questions...)"></textarea>
-                    <button type="submit">Capture</button>
+                    <textarea name="content" placeholder="Or type here..." rows="2"></textarea>
+                    <button type="submit" class="btn-large">Save Note</button>
                 </form>
             </div>
 
+            <!-- Recent captures -->
+            ${recentCaptures.length > 0 ? \`
             <div class="container">
-                <h2>Recent Captures</h2>
-                ${recentCaptures.length === 0 ? '<p class="meta">No captures yet. Start by adding one above!</p>' : ''}
-                ${recentCaptures.map(c => `
+                <h2>Recent</h2>
+                \${recentCaptures.map(c => \`
                     <div class="capture-item">
-                        <div class="meta">${c.capture_id} · ${c.input_type} · ${new Date(c.created_at).toLocaleString()}</div>
-                        <p>${escapeHtml(c.content.substring(0, 200))}${c.content.length > 200 ? '...' : ''}</p>
+                        <div class="meta">\${c.input_type} · \${new Date(c.created_at).toLocaleString()}</div>
+                        <p>\${escapeHtml(c.content.substring(0, 100))}\${c.content.length > 100 ? '...' : ''}</p>
                         <div class="feedback-btns">
-                            <button onclick="feedback('${c.capture_id}', 1)">👍</button>
-                            <button onclick="feedback('${c.capture_id}', -1)">👎</button>
+                            <button onclick="feedback('\${c.capture_id}', 1, this)">👍</button>
+                            <button onclick="feedback('\${c.capture_id}', -1, this)">👎</button>
                         </div>
                     </div>
-                `).join('')}
+                \`).join('')}
             </div>
+            \` : ''}
 
             <script>
-                function feedback(captureId, rating) {
+                function feedback(captureId, rating, btn) {
                     fetch('/feedback', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ capture_id: captureId, rating })
                     }).then(() => {
-                        event.target.style.background = rating > 0 ? '#238636' : '#f85149';
+                        btn.classList.add(rating > 0 ? 'selected-up' : 'selected-down');
                     });
                 }
             </script>
@@ -913,37 +1041,41 @@ app.get('/capture', (req, res) => {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Futility's - New Capture</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Futility's - Type Capture</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
             <style>${STYLES}</style>
         </head>
         <body>
             <nav>
-                <a href="/">Dashboard</a>
-                <a href="/capture">New Capture</a>
-                <a href="/upload">Upload File</a>
+                <a href="/">Home</a>
+                <a href="/voice">Voice</a>
+                <a href="/photo">Photo</a>
                 <a href="/browse">Browse</a>
-                <a href="/logout">Logout</a>
+                <a href="/logout">Out</a>
             </nav>
 
-            <h1>New Capture</h1>
+            <h1>Type a Note</h1>
 
             <div class="container">
                 <form method="POST" action="/capture">
-                    <label>What do you want to capture?</label>
-                    <textarea name="content" rows="10" placeholder="Observations, notes, questions, anything..."></textarea>
+                    <textarea name="content" rows="6" placeholder="What do you want to capture?"></textarea>
 
-                    <label>Type (optional)</label>
                     <select name="input_type">
-                        <option value="chat">Chat / Note</option>
+                        <option value="note">Note</option>
                         <option value="observation">Observation</option>
                         <option value="question">Question</option>
                         <option value="procedure">Procedure</option>
                         <option value="issue">Issue / Problem</option>
                     </select>
 
-                    <button type="submit">Capture & Save to Git</button>
+                    <button type="submit" class="btn-large">Save</button>
                 </form>
+            </div>
+
+            <div class="container">
+                <p class="meta" style="text-align:center;">
+                    Prefer talking? <a href="/voice">Use voice input</a>
+                </p>
             </div>
         </body>
         </html>
@@ -997,6 +1129,279 @@ ${content}
 });
 
 //=============================================================================
+// ROUTES: VOICE INPUT (Web Speech API)
+//=============================================================================
+
+app.get('/voice', (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Futility's - Voice Capture</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+            <style>${STYLES}</style>
+        </head>
+        <body>
+            <nav>
+                <a href="/">Home</a>
+                <a href="/voice">Voice</a>
+                <a href="/photo">Photo</a>
+                <a href="/browse">Browse</a>
+                <a href="/logout">Out</a>
+            </nav>
+
+            <h1>Voice Capture</h1>
+
+            <div class="container">
+                <button id="voiceBtn" class="btn-large btn-voice" onclick="toggleVoice()">
+                    🎤 Tap to Talk
+                </button>
+
+                <div id="status" class="meta" style="text-align:center; margin: 15px 0;">
+                    Tap the button and speak clearly
+                </div>
+
+                <form method="POST" action="/capture" id="voiceForm">
+                    <div id="transcript" class="transcript-preview">
+                        <span class="placeholder">Your words will appear here...</span>
+                    </div>
+                    <input type="hidden" name="content" id="contentField" />
+                    <input type="hidden" name="input_type" value="voice" />
+                    <button type="submit" class="btn-large" id="submitBtn" disabled>
+                        Save Capture
+                    </button>
+                </form>
+            </div>
+
+            <div class="container">
+                <p class="meta" style="text-align:center;">
+                    Works best in Chrome or Safari on mobile.<br>
+                    Speak clearly. Tap again to stop.
+                </p>
+            </div>
+
+            <script>
+                let recognition = null;
+                let isRecording = false;
+                let fullTranscript = '';
+
+                // Check for Web Speech API support
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+                if (!SpeechRecognition) {
+                    document.getElementById('status').innerHTML =
+                        '<span class="error">Voice input not supported in this browser. Try Chrome or Safari.</span>';
+                    document.getElementById('voiceBtn').disabled = true;
+                    document.getElementById('voiceBtn').textContent = 'Not Supported';
+                } else {
+                    recognition = new SpeechRecognition();
+                    recognition.continuous = true;
+                    recognition.interimResults = true;
+                    recognition.lang = 'en-US';
+
+                    recognition.onresult = (event) => {
+                        let interim = '';
+                        let final = '';
+
+                        for (let i = event.resultIndex; i < event.results.length; i++) {
+                            const transcript = event.results[i][0].transcript;
+                            if (event.results[i].isFinal) {
+                                final += transcript + ' ';
+                            } else {
+                                interim += transcript;
+                            }
+                        }
+
+                        if (final) {
+                            fullTranscript += final;
+                        }
+
+                        const display = fullTranscript + '<span style="color:#6e7681">' + interim + '</span>';
+                        document.getElementById('transcript').innerHTML = display || '<span class="placeholder">Your words will appear here...</span>';
+                        document.getElementById('transcript').classList.toggle('has-content', fullTranscript.length > 0);
+
+                        if (fullTranscript.trim()) {
+                            document.getElementById('contentField').value = fullTranscript.trim();
+                            document.getElementById('submitBtn').disabled = false;
+                        }
+                    };
+
+                    recognition.onerror = (event) => {
+                        console.error('Speech error:', event.error);
+                        if (event.error === 'not-allowed') {
+                            document.getElementById('status').innerHTML =
+                                '<span class="error">Microphone access denied. Check browser permissions.</span>';
+                        } else {
+                            document.getElementById('status').innerHTML =
+                                '<span class="warning">Error: ' + event.error + '. Try again.</span>';
+                        }
+                        stopRecording();
+                    };
+
+                    recognition.onend = () => {
+                        if (isRecording) {
+                            // Restart if still supposed to be recording
+                            recognition.start();
+                        }
+                    };
+                }
+
+                function toggleVoice() {
+                    if (isRecording) {
+                        stopRecording();
+                    } else {
+                        startRecording();
+                    }
+                }
+
+                function startRecording() {
+                    if (!recognition) return;
+
+                    isRecording = true;
+                    fullTranscript = '';
+                    document.getElementById('voiceBtn').classList.add('recording');
+                    document.getElementById('voiceBtn').textContent = '🔴 Recording... Tap to Stop';
+                    document.getElementById('status').textContent = 'Listening...';
+                    document.getElementById('transcript').innerHTML = '<span class="placeholder">Listening...</span>';
+                    document.getElementById('submitBtn').disabled = true;
+
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        // Already started
+                    }
+                }
+
+                function stopRecording() {
+                    isRecording = false;
+                    document.getElementById('voiceBtn').classList.remove('recording');
+                    document.getElementById('voiceBtn').textContent = '🎤 Tap to Talk';
+                    document.getElementById('status').textContent = fullTranscript ? 'Review and save below' : 'Tap the button and speak clearly';
+
+                    if (recognition) {
+                        recognition.stop();
+                    }
+                }
+            </script>
+        </body>
+        </html>
+    `);
+});
+
+//=============================================================================
+// ROUTES: PHOTO CAPTURE (Direct camera access)
+//=============================================================================
+
+app.get('/photo', (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Futility's - Photo Capture</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+            <style>${STYLES}</style>
+            <style>
+                .photo-preview {
+                    width: 100%;
+                    max-height: 300px;
+                    object-fit: contain;
+                    border-radius: 12px;
+                    margin: 15px 0;
+                    display: none;
+                }
+                .photo-preview.has-image { display: block; }
+            </style>
+        </head>
+        <body>
+            <nav>
+                <a href="/">Home</a>
+                <a href="/voice">Voice</a>
+                <a href="/photo">Photo</a>
+                <a href="/browse">Browse</a>
+                <a href="/logout">Out</a>
+            </nav>
+
+            <h1>Photo Capture</h1>
+
+            <div class="container">
+                <form method="POST" action="/upload" enctype="multipart/form-data" id="photoForm">
+                    <!-- Big camera button -->
+                    <div class="file-input-wrapper">
+                        <button type="button" class="btn-large action-btn photo" style="width:100%;">
+                            <span class="icon">📷</span>
+                            <span class="label" id="cameraLabel">Take Photo</span>
+                        </button>
+                        <input type="file"
+                               name="file"
+                               id="cameraInput"
+                               accept="image/*"
+                               capture="environment"
+                               onchange="previewPhoto(this)" />
+                    </div>
+
+                    <!-- Photo preview -->
+                    <img id="photoPreview" class="photo-preview" alt="Preview" />
+
+                    <!-- Optional note -->
+                    <textarea name="description"
+                              placeholder="Add a note (optional): What is this? Equipment ID?"
+                              rows="2"
+                              style="margin-top: 15px;"></textarea>
+
+                    <button type="submit" class="btn-large" id="submitBtn" disabled>
+                        Save Photo
+                    </button>
+                </form>
+            </div>
+
+            <div class="container">
+                <p class="meta" style="text-align:center;">
+                    <strong>Tips:</strong><br>
+                    • Nameplates: get close, make text readable<br>
+                    • Problems: show the issue clearly<br>
+                    • Gauges: capture the full reading
+                </p>
+            </div>
+
+            <!-- Gallery option -->
+            <div class="container">
+                <p class="meta">Have an existing photo?</p>
+                <div class="file-input-wrapper">
+                    <button type="button" class="btn-secondary" style="width:100%;">
+                        Choose from Gallery
+                    </button>
+                    <input type="file"
+                           accept="image/*"
+                           onchange="document.getElementById('cameraInput').files = this.files; previewPhoto(this);" />
+                </div>
+            </div>
+
+            <script>
+                function previewPhoto(input) {
+                    const preview = document.getElementById('photoPreview');
+                    const submitBtn = document.getElementById('submitBtn');
+                    const label = document.getElementById('cameraLabel');
+
+                    if (input.files && input.files[0]) {
+                        const reader = new FileReader();
+
+                        reader.onload = function(e) {
+                            preview.src = e.target.result;
+                            preview.classList.add('has-image');
+                            submitBtn.disabled = false;
+                            label.textContent = 'Retake Photo';
+                        };
+
+                        reader.readAsDataURL(input.files[0]);
+                    }
+                }
+            </script>
+        </body>
+        </html>
+    `);
+});
+
+//=============================================================================
 // ROUTES: FILE UPLOAD
 //=============================================================================
 
@@ -1005,37 +1410,40 @@ app.get('/upload', (req, res) => {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Futility's - Upload File</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Futility's - Upload Document</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
             <style>${STYLES}</style>
         </head>
         <body>
             <nav>
-                <a href="/">Dashboard</a>
-                <a href="/capture">New Capture</a>
-                <a href="/upload">Upload File</a>
+                <a href="/">Home</a>
+                <a href="/voice">Voice</a>
+                <a href="/photo">Photo</a>
                 <a href="/browse">Browse</a>
-                <a href="/logout">Logout</a>
+                <a href="/logout">Out</a>
             </nav>
 
-            <h1>Upload File</h1>
+            <h1>Upload Document</h1>
 
             <div class="container">
                 <form method="POST" action="/upload" enctype="multipart/form-data">
-                    <label>Select a file (PDF, image, or document)</label>
-                    <input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.txt,.md" required />
+                    <div class="file-input-wrapper">
+                        <button type="button" class="btn-large btn-secondary" style="width:100%;">
+                            📄 Select File
+                        </button>
+                        <input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.txt,.md" required />
+                    </div>
 
-                    <label>Description (optional)</label>
-                    <textarea name="description" rows="3" placeholder="What is this file? Any notes?"></textarea>
+                    <textarea name="description" rows="2" placeholder="What is this file? (optional)"></textarea>
 
-                    <button type="submit">Upload</button>
+                    <button type="submit" class="btn-large">Upload</button>
                 </form>
             </div>
 
             <div class="container">
-                <p class="meta">
-                    Supported: PDF, images (PNG, JPG), documents (DOC, TXT, MD)<br>
-                    Max size: 50MB
+                <p class="meta" style="text-align:center;">
+                    PDF, images, documents up to 50MB<br>
+                    <a href="/photo">Take a photo instead?</a>
                 </p>
             </div>
         </body>
@@ -1083,37 +1491,38 @@ app.get('/browse', (req, res) => {
         <html>
         <head>
             <title>Futility's - Browse</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
             <style>${STYLES}</style>
         </head>
         <body>
             <nav>
-                <a href="/">Dashboard</a>
-                <a href="/capture">New Capture</a>
-                <a href="/upload">Upload File</a>
+                <a href="/">Home</a>
+                <a href="/voice">Voice</a>
+                <a href="/photo">Photo</a>
                 <a href="/browse">Browse</a>
-                <a href="/logout">Logout</a>
+                <a href="/logout">Out</a>
             </nav>
 
             <h1>All Captures</h1>
-            <p class="meta">${total} total captures · Page ${page} of ${totalPages}</p>
+            <p class="meta">${total} total · Page ${page}/${totalPages}</p>
 
             <div class="container">
-                ${captures.map(c => `
+                ${captures.length === 0 ? '<p class="meta">No captures yet!</p>' : ''}
+                ${captures.map(c => \`
                     <div class="capture-item">
                         <div class="meta">
-                            ${c.capture_id} · ${c.input_type} · ${new Date(c.created_at).toLocaleString()}
-                            ${c.git_committed ? '<span class="success">✓ Git</span>' : '<span class="warning">⏳ Local</span>'}
+                            \${c.input_type} · \${new Date(c.created_at).toLocaleString()}
+                            \${c.git_committed ? '<span class="success">✓</span>' : '<span class="warning">⏳</span>'}
                         </div>
-                        <p>${escapeHtml(c.content.substring(0, 300))}${c.content.length > 300 ? '...' : ''}</p>
-                        ${c.file_path ? `<p class="meta">📎 File attached</p>` : ''}
+                        <p>\${escapeHtml(c.content.substring(0, 150))}\${c.content.length > 150 ? '...' : ''}</p>
+                        \${c.file_path ? '<p class="meta">📎 File</p>' : ''}
                     </div>
-                `).join('')}
+                \`).join('')}
             </div>
 
-            <div style="text-align: center; margin: 20px;">
-                ${page > 1 ? `<a href="/browse?page=${page-1}" class="btn btn-secondary">← Previous</a>` : ''}
-                ${page < totalPages ? `<a href="/browse?page=${page+1}" class="btn btn-secondary">Next →</a>` : ''}
+            <div style="display:flex; justify-content:center; gap:10px; margin: 20px 0;">
+                ${page > 1 ? \`<a href="/browse?page=\${page-1}" class="btn btn-secondary">← Prev</a>\` : ''}
+                ${page < totalPages ? \`<a href="/browse?page=\${page+1}" class="btn btn-secondary">Next →</a>\` : ''}
             </div>
         </body>
         </html>
@@ -1147,29 +1556,36 @@ app.get('/success', (req, res) => {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Futility's - Success</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Futility's - Saved!</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
             <style>${STYLES}</style>
         </head>
         <body>
             <nav>
-                <a href="/">Dashboard</a>
-                <a href="/capture">New Capture</a>
-                <a href="/upload">Upload File</a>
+                <a href="/">Home</a>
+                <a href="/voice">Voice</a>
+                <a href="/photo">Photo</a>
                 <a href="/browse">Browse</a>
-                <a href="/logout">Logout</a>
+                <a href="/logout">Out</a>
             </nav>
 
             <div class="container" style="text-align: center;">
-                <h1 class="success">✓ Captured!</h1>
-                <p>Your ${type === 'file' ? 'file' : 'input'} has been saved.</p>
-                <p class="meta">ID: ${id}</p>
-                ${git === 'failed' ? '<p class="warning">⚠ Git push failed - saved locally only</p>' : '<p class="success">✓ Pushed to Git</p>'}
+                <h1 class="success" style="font-size: 48px;">✓</h1>
+                <h2>Saved!</h2>
+                ${git === 'failed' ? '<p class="warning">Saved locally (Git push failed)</p>' : '<p class="success">Synced to Git</p>'}
 
-                <div style="margin-top: 30px;">
-                    <a href="/capture" class="btn">Capture Another</a>
-                    <a href="/" class="btn btn-secondary">Dashboard</a>
+                <div class="action-grid" style="margin-top: 30px;">
+                    <a href="/voice" class="action-btn" style="text-decoration:none; color:white;">
+                        <div class="icon">🎤</div>
+                        <div class="label">Voice</div>
+                    </a>
+                    <a href="/photo" class="action-btn photo" style="text-decoration:none; color:white;">
+                        <div class="icon">📷</div>
+                        <div class="label">Photo</div>
+                    </a>
                 </div>
+
+                <a href="/" class="btn btn-secondary" style="width:100%; margin-top: 15px;">Back to Home</a>
             </div>
         </body>
         </html>

@@ -64,14 +64,35 @@ Every SSOT fact contains:
 2) INTAKE SOURCES
 ===============================================================================
 
-2.1 CHAT MESSAGES
------------------
-- Primary intake method
+CRITICAL: Adoption is the biggest hurdle. Input methods must be EASY — old
+grumpy mechanic easy. Hands are dirty, time is short, patience is zero.
+
+2.1 VOICE INPUT (MVP REQUIRED)
+------------------------------
+- Primary intake method — talk, don't type
+- Uses browser Web Speech API (Chrome/Safari mobile)
+- Big microphone button, one tap to start
+- Transcribes to text field for review before submit
+- Works without internet (browser-native)
+- Fallback: type manually
+
+2.2 PHOTO CAPTURE (MVP REQUIRED)
+--------------------------------
+- Direct camera access from mobile browser
+- One tap to open camera, snap, submit
+- Use for: nameplates, gauges, problems, parts
+- OCR extracts text (nameplates, labels)
+- Original photo always preserved
+- Links to asset automatically when possible
+
+2.3 CHAT/TEXT MESSAGES
+----------------------
+- Secondary intake method (for those who prefer typing)
 - Captured verbatim with timestamp and user ID
 - Processed for claim extraction
 - Original text always preserved
 
-2.2 DOCUMENT UPLOADS (PDF, TXT, etc.)
+2.4 DOCUMENT UPLOADS (PDF, TXT, etc.)
 --------------------------------------
 - Text extracted via OCR (scanned) or direct extraction (digital)
 - Chunked into logical sections
@@ -79,15 +100,7 @@ Every SSOT fact contains:
 - ORIGINAL FILE ALWAYS PRESERVED and retrievable
 - Claims extracted from sections go through normal evaluation
 
-2.3 PHOTO UPLOADS
------------------
-- OCR extracts visible text (nameplates, labels, gauges)
-- Vision model can identify equipment type if needed
-- ORIGINAL PHOTO ALWAYS PRESERVED and linked to asset
-- Extracted info becomes capture, goes through evaluation
-- Photos linked to assets for visual reference
-
-2.4 CAPTURE STRUCTURE
+2.5 CAPTURE STRUCTURE
 ---------------------
 Every capture contains:
   - capture_id: Unique identifier (CAP-XXXXX)
