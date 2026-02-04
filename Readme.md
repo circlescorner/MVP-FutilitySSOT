@@ -111,20 +111,8 @@ The installation wizard handles everything: server setup, dependencies, applicat
 
 ---
 
-## Why "Futility's"?
-
-Because maintaining accurate documentation in a factory has historically felt futile — information decays, people leave, systems change, and no one has time to keep up.
-
-This system is designed to make that futility... less futile.
-
----
-
 ## License
 
 Internal use. Not currently open source.
 
----
-
-**Owner:** Gondor
-**Version:** 4.0
-**Last Updated:** February 2026
+**Version:** 4.0 · February 2026
