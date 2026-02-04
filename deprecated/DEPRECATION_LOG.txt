@@ -1,0 +1,162 @@
+FUTILITY'S — DEPRECATION LOG
+=============================
+Date: 2026-02-04
+Reason: Consolidation of scattered ideas into unified specification
+
+This folder contains files that have been superseded, duplicated, or
+consolidated into the new unified documentation structure.
+
+Nothing here was "wrong" — these files served their purpose during
+the brainstorming and iteration phase. They are preserved for
+historical reference only.
+
+===============================================================================
+DEPRECATED FILES AND REASONS
+===============================================================================
+
+1. MASTER seed.md (depreciated UNPATCHED)
+   ───────────────────────────────────────
+   REASON: Superseded by docs/MASTER.md (v3.4 evolved into consolidated spec)
+
+   This was the original v3 specification. It was iterated upon through
+   patches (v3.1 → v3.2 → v3.3 → v3.4) and the evolved version became
+   the canonical spec. Key differences from final:
+   - Lane 3 was "External API" (now Lane 3 = Runpod GPU, Lane 4 = API)
+   - Missing WorthItScore formula
+   - Missing PatchOps hybrid model
+   - Owner listed as "Madison" (now "Gondor")
+
+   REPLACED BY: docs/MASTER.md
+
+-------------------------------------------------------------------------------
+
+2. docs/USAGE_AI_PATCH_AUTHOR.md.md (double .md extension)
+   ────────────────────────────────────────────────────────
+   REASON: Exact duplicate of docs/AI_PATCH_AUTHOR.md
+
+   This file was accidentally created with a double .md extension.
+   Content is identical to AI_PATCH_AUTHOR.md. No unique ideas lost.
+
+   REPLACED BY: docs/PATCH_MANUAL.md (merged document)
+
+-------------------------------------------------------------------------------
+
+3. docs/AI_PATCH_AUTHOR.md
+   ────────────────────────
+   REASON: Merged into docs/PATCH_MANUAL.md
+
+   This was "Part 2" of the patch authoring instructions (Sections 8-10).
+   It has been merged with USAGE_AI_PATCH_AUTHOR.md into a single
+   complete document.
+
+   REPLACED BY: docs/PATCH_MANUAL.md
+
+-------------------------------------------------------------------------------
+
+4. docs/USAGE_AI_PATCH_AUTHOR.md
+   ──────────────────────────────
+   REASON: Merged into docs/PATCH_MANUAL.md
+
+   This was "Part 1" of the patch authoring instructions (Sections 0-7).
+   Combined with AI_PATCH_AUTHOR.md for completeness.
+
+   REPLACED BY: docs/PATCH_MANUAL.md
+
+-------------------------------------------------------------------------------
+
+5. docs/Assembled/MASTER.md
+   ─────────────────────────
+   REASON: Moved to docs/MASTER.md (removed unnecessary subfolder)
+
+   The "Assembled" subfolder was unnecessary nesting. Content preserved
+   and enhanced in the new location.
+
+   REPLACED BY: docs/MASTER.md
+
+-------------------------------------------------------------------------------
+
+6. docs/Mission and ethics.md
+   ───────────────────────────
+   REASON: Consolidated into docs/PRINCIPLES.md
+
+   Philosophy and ethics content was duplicated across multiple files
+   (README §2, MASTER §0, this file). All unique content preserved in
+   the new consolidated PRINCIPLES.md.
+
+   REPLACED BY: docs/PRINCIPLES.md
+
+-------------------------------------------------------------------------------
+
+7. docs/TRAJECTORY_TO_SSOT.md
+   ───────────────────────────
+   REASON: Consolidated into docs/ROADMAP.md
+
+   The trajectory document had good content but used a different
+   numbering system than README §12. The new ROADMAP.md unifies the
+   implementation phases and capability stages into one coherent plan.
+
+   REPLACED BY: docs/ROADMAP.md
+
+-------------------------------------------------------------------------------
+
+8. Patches in words/*.md (4 files)
+   ─────────────────────────────────
+   REASON: Historical patch explanations, no longer needed for active spec
+
+   These documented the evolution from v3.1 to v3.4. The changes have
+   been integrated into the canonical spec. Preserved here for audit
+   trail purposes only.
+
+   Files:
+   - 0001-master-v3.1.patch words.md
+   - 0002-master-v3.2.patch Words.md
+   - 0003-master-v3.3.patch Wards.md
+   - 0004-master-v3.4.patch Words.md
+
+   REPLACED BY: docs/MASTER.md (contains change summary)
+
+-------------------------------------------------------------------------------
+
+9. import previous plan/ (entire folder)
+   ──────────────────────────────────────
+   REASON: Brainstorming session content has been reviewed and folded in
+
+   This folder contained an earlier brainstorming session. Key ideas
+   that were extracted and incorporated into the new spec:
+
+   INCORPORATED:
+   - Asset Resolver Bot (now in MASTER.md)
+   - Question Value Gating scoring system (now in PRINCIPLES.md)
+   - "Don't Ask — Infer" rule (now in PRINCIPLES.md)
+   - Mechanic voting scale 1-5 (now in MASTER.md)
+   - SSOT Auditor role (now in MASTER.md)
+   - Dual output tracks (SSOT Explorer + Field Guide) (now in MASTER.md)
+   - Budget applies to escalation only, never mechanics (now in MASTER.md)
+   - Multi-tier escalation model (now in MASTER.md)
+
+   NOT INCORPORATED (decided against or deferred):
+   - Points/credits system for mechanics (likely to cause gaming)
+   - Four author personas (simplified to AI curation guidelines)
+   - Truth+ tier (too risky for hallucination)
+   - Separate proposed.git / book.git repos (simplified to single repo)
+   - PostgreSQL + pgvector (deferred, SQLite for MVP)
+
+   REPLACED BY: Content folded into new consolidated docs
+
+-------------------------------------------------------------------------------
+
+10. Readme.md (original)
+    ─────────────────────
+    REASON: Replaced with brief intro version
+
+    The original README was 460 lines and duplicated much of MASTER.md.
+    New README is a brief intro (~80 lines) that points to documentation.
+
+    CONTENT PRESERVED IN:
+    - docs/MASTER.md (technical spec)
+    - docs/PRINCIPLES.md (philosophy)
+    - docs/ROADMAP.md (phases)
+
+===============================================================================
+END DEPRECATION LOG
+===============================================================================
