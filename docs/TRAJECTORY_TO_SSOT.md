@@ -8,7 +8,11 @@ It is binding guidance for AI behavior and for human maintainers when interpreti
 
 ## 1) Current state (what Futility’s is right now)
 
-Futility’s is currently a "patch authoring + execution pipeline" whose purpose is to:
+Futility’s is currently a working concept establishing a rock solid "staging area" with all the services, systems, acoounts, connections, etc etc in order 
+
+...incrementially working towards full scale SSOT system 
+
+"txt/code normalization/formatting" + execution pipeline" whose purpose is to:
 
 - accept messy human input (chat/paste)
 - convert it into deterministic patch operations
@@ -52,6 +56,15 @@ The Git patch compiler is intentionally the first working prototype because it p
 deterministic, reviewable, reversible change.
 
 Trajectory stages:
+
+Phase 0 is establishing all that and getting to the point of an empty but configured and ready to go server, and can be accessed via https domain we own. 
+phase 1 (functional barebones system concept, early dev phase) setup private login but https dev-skelton to build this mechanism input->process->serve better data. The minimum requirement for success are: website has login credentials, can accept txt and files, does not llm basic syntax/markdown/restructuring then uploading to git and open PR
+phase 2 Dev sandbox. esablish a DO droplet or docker with specifially for executing and testing code (once system is stable this will become "staging" area for testing PRs prior to merge)
+Phase 3 add bots
+phase 4 add real database
+phase 5 prove system viability with by establishing a repeatable, tunable system
+phase 6 stress test system and identify weaknesses/flaws (do this via bot agents actually entering "mechanic chatter" and observe
+phase xyz tbd
 
 ### Stage A — Git Patcher (NOW)
 - Build a robust Chat → Patch → PR machine.
@@ -126,7 +139,7 @@ Everything SSOT-like must be layered on top only after the patcher is reliable.
 
 When a user request mentions SSOT concepts:
 
-- If it is about TODAY’S system: treat it as a patcher pipeline spec change.
+- If it is about anything about initial system setup- express it as 
 - If it is about FUTURE SSOT: express it as a trajectory-stage proposal, not a current capability.
 - If it requires crossing stages (patcher → SSOT workflow): classify as MAJOR CHANGE and request authorization before producing a patch.
 
