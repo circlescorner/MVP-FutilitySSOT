@@ -1,0 +1,23 @@
+A proposed truth is something like:
+
+“As of 2026-02, the most likely model for Pump 14B is Model X (confidence 0.72)”
+
+That confidence is not LLM intuition. It’s computed from:
+
+Number of independent sources
+
+Recency
+
+Role weight (tech vs supervisor)
+
+Evidence attached
+
+Historical accuracy of the contributor
+
+Known contradictions
+
+LLM helps explain the proposal:
+
+“This is believed because 3 independent technicians referenced a replacement after the 2021 fire, and no claims to the contrary were made after 2022.”
+
+Humans decide whether that explanation passes the sniff test.
