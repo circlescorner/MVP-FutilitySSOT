@@ -1,0 +1,450 @@
+NOTE ALL PATCHES AT THE END OF THIS DOCUMENT SUPERSEDE any PRIOR INFORMATION. Information IN PATCHES ALWAYS TRUMPS EARLIER POINTS I THE DOCUMENT 
+  
+
+  
+
+===============================================================================
+
+FUTILITY’S — CHAT→PATCH→GIT COMPILER (MASTER v3)
+
+Purpose: "Smart patching" system that turns chat/paste into audited git PRs.
+
+Scope: Not truth-finding yet. This is a patch authoring + execution pipeline.
+
+Owner: Madison
+
+===============================================================================
+
+  
+
+0) PRIME DIRECTIVES (NON-NEGOTIABLE)
+
+-----------------------------------
+
+D0.1 Single interface: user chats with ONE website bot ("Conductor").
+
+D0.2 LLM chain may decide to execute once intent is explicit and gates pass.
+
+D0.3 System may ask bounded questions to increase confidence (token hygiene).
+
+D0.4 Confirm screen is REQUIRED before creating PR (default).
+
+D0.5 Executor is deterministic code; LLMs never run git directly.
+
+D0.6 Budgeted escalation: spend compute/tokens only when it is "worth it".
+
+D0.7 Auditability: every attempt produces a trace (even failures).
+
+  
+
+1) DEPLOYMENT TOPOLOGY (DIGITALOCEAN-LED)
+
+----------------------------------------
+
+Always-on Control Plane:
+
+  - 1x 1GB droplet (always up)
+
+  - Hosts: website UI, auth (PIN), job queue, orchestration, audit log
+
+  - Runs: "kinda dumb" local LLM for triage / drafts / light edits
+
+  - Holds: DO API token, GitHub token, budget state, config
+
+  
+
+Burst Workers (ephemeral):
+
+  - spun up only when required
+
+  - 2–8GB droplets for "medium intelligence" / heavier formatting / sandbox apply
+
+  - swarm mode: multiple burst workers in parallel
+
+  - destroyed immediately after job completion
+
+  
+
+External API (last resort):
+
+  - called only if local chain uncertain AND expects material improvement
+
+  
+
+2) USER EXPERIENCE (ONE BOT, TWO INPUT MODES)
+
+---------------------------------------------
+
+A) Chat Mode:
+
+  User: natural language instruction
+
+  System: asks minimal questions if needed, then proposes patch + executes after confirm
+
+  
+
+B) PATCHGIT Mode (fast paste envelope):
+
+  User pastes a structured block; system processes without needing chat
+
+  Example:
+
+    PATCHGIT v1
+
+    TITLE: ...
+
+    SCOPE: ...
+
+    TARGETS:
+
+    - ...
+
+    ---BEGIN---
+
+    payload
+
+    ---END---
+
+  
+
+3) PIPELINE OVERVIEW (3 STAGES + EXECUTOR)
+
+------------------------------------------
+
+               (all behind the Conductor)
+
+  Intake
+
+    |
+
+    v
+
+  Stage 1: INTERPRET (Plan + Draft)
+
+    |
+
+    v
+
+  Stage 2: GATE (Goal compliance + risk + confidence)
+
+    |
+
+    v
+
+  Stage 3: FIT (Repo/environment reality + execution plan)
+
+    |
+
+    v
+
+  CONFIRM SCREEN (required)
+
+    |
+
+    v
+
+  EXECUTOR (deterministic git compiler) -> Branch -> Commit -> PR -> (optional merge later)
+
+  
+
+4) STAGE CONTRACTS (SWARM-READY INTERFACES)
+
+-------------------------------------------
+
+Each stage may be implemented by:
+
+  - 1 model, OR
+
+  - swarm (N models) + reducer
+
+But MUST output one canonical artifact.
+
+  
+
+Stage 1 Output: PatchProposal
+
+  - title, scope
+
+  - explicit targets list (files)
+
+  - per-target ops (create/append/replace/modify)
+
+  - patch payload (markdown/code)
+
+  - questions_needed (<=3)
+
+  - self-declared risk flags
+
+  
+
+Stage 2 Output: GateVerdict
+
+  - PASS/FAIL
+
+  - confidence level C0..C3 (+ C4 optional later)
+
+  - reasons + required_changes
+
+  - escalation recommendation (none / medium / swarm / api)
+
+  
+
+Stage 3 Output: ExecutionRequest
+
+  - final targets + final payload
+
+  - checks_to_run (format/lint/tests as configured)
+
+  - branch name / commit message / PR title/body
+
+  - expected files changed
+
+  - rollback note
+
+  - lane selection (control plane vs burst worker vs swarm vs api)
+
+  
+
+5) CONFIDENCE LEVELS (WHAT "SMART MOVE" MEANS)
+
+----------------------------------------------
+
+C0 Draft:
+
+  - intent unclear -> ask questions; do not execute
+
+C1 Plan:
+
+  - intent understood; plan produced; no repo mutation
+
+C2 Apply:
+
+  - likely to apply cleanly; may sandbox apply on burst worker
+
+C3 Ship:
+
+  - sandbox apply succeeded (if required) + checks passed -> ready for PR
+
+C4 Auto-merge (optional later):
+
+  - only for safe change classes; not enabled by default
+
+  
+
+6) QUESTION DISCIPLINE (TOKEN HYGIENE)
+
+--------------------------------------
+
+Rules:
+
+  - ask only if answer changes diff materially or reduces risk meaningfully
+
+  - max 3 questions per cycle
+
+  - prefer multiple choice
+
+  - if still ambiguous after 3: stop at C0 and ask user to restate
+
+  
+
+7) BUDGET MANAGER (DAILY LIMITS + "WORTH IT")
+
+---------------------------------------------
+
+Budget types tracked daily:
+
+  - local compute minutes (burst worker droplet time)
+
+  - external API token spend
+
+  
+
+"Worth it" definition:
+
+  - expected_confidence_gain >= threshold
+
+  - OR risk_reduction >= threshold
+
+  - OR change_class requires it (e.g., wide refactor)
+
+  
+
+Budget behavior:
+
+  - if budget low: prefer questions + local-only chain; avoid swarm; avoid API
+
+  
+
+8) EXECUTION LANES (YOUR NEW ESCALATION LADDER)
+
+-----------------------------------------------
+
+Lane 0: ALWAYS-ON 1GB ("kinda dumb" local LLM)
+
+  - best for: drafting patch text, small doc changes, parsing PATCHGIT
+
+  - limitations: low reasoning depth; no heavy transforms; minimal checks
+
+  
+
+Lane 1: MEDIUM BURST (single 2–8GB droplet)
+
+  Trigger when:
+
+    - patch touches multiple files
+
+    - patch includes code formatting/lint
+
+    - Stage 2 confidence < C2 but close
+
+    - repo needs sandbox apply to confirm
+
+  Purpose:
+
+    - stronger local reasoning (bigger model) OR more RAM/CPU for tools
+
+    - run deterministic checks
+
+    - produce C2→C3 confidence
+
+  
+
+Lane 2: SWARM BURST (either 2×8GB OR 4×4GB)
+
+  Trigger when:
+
+    - uncertainty remains after Lane 1
+
+    - multiple competing plans exist
+
+    - risk is high (many files, complex edits)
+
+    - need multi-angle critique (planner vs critic vs fit)
+
+  Selection heuristic:
+
+    - compute "parallelism need" vs "per-agent capability need"
+
+    - If tasks are independent critique/votes: prefer 4×4GB (more parallel lanes)
+
+    - If each agent must be stronger (bigger model per agent): prefer 2×8GB
+
+  Output:
+
+    - reduced single PatchProposal/GateVerdict/ExecutionRequest
+
+  
+
+Lane 3: EXTERNAL API (last resort)
+
+  Trigger ONLY when ALL are true:
+
+    - local chain remains uncertain (Stage 2 FAIL or < C2)
+
+    - chain states WHY uncertainty exists (specific missing reasoning)
+
+    - chain predicts API materially improves confidence
+
+    - budget allows
+
+  Note:
+
+    - API is used to resolve ambiguity / improve plan, not to bypass gates
+
+  
+
+9) CONFIRM SCREEN (REQUIRED BEFORE PR)
+
+--------------------------------------
+
+Show:
+
+  - Intent summary (what Conductor believes you meant)
+
+  - Targets list (explicit)
+
+  - Diff preview (collapsed + expandable)
+
+  - Confidence level (C0..C3) + reasons
+
+  - Spend summary (droplets used / API used)
+
+Buttons:
+
+  - EXECUTE: create PR now
+
+  - REVISE: return to Stage 1 with feedback
+
+  - CANCEL: stop; nothing published
+
+  
+
+10) EXECUTOR (DETERMINISTIC PATCH COMPILER)
+
+-------------------------------------------
+
+Given ExecutionRequest:
+
+  - acquire lock (one job at a time)
+
+  - pull latest main
+
+  - allocate next patch number NNN
+
+  - write patches/NNN-*.md (raw intake + final payload + metadata)
+
+  - append HISTORY.md
+
+  - apply file edits (create/append/replace/modify)
+
+  - branch -> commit -> push -> PR
+
+Failure handling:
+
+  - abort safely; do not partially publish
+
+  - record full logs + reason in audit
+
+  
+
+11) SAFETY / "WON'T BREAK THE SYSTEM"
+
+-------------------------------------
+
+Even if targets are "any", the system protects itself via:
+
+  - protected zones (require explicit user intent + higher confidence):
+
+      * patch executor code
+
+      * auth config/secrets
+
+      * automation workflows
+
+  - never commit secrets / tokens / private keys
+
+  - never rewrite history
+
+  - no direct push to main (PR only)
+
+  - size bounds per patch (avoid accidental megadumps)
+
+  - job serialization lock (prevents race/push conflicts)
+
+  
+
+12) FUTURE PLUGINS (NOT REQUIRED NOW)
+
+-------------------------------------
+
+- Swarm expansion at any stage: N agents → reducer → canonical output
+
+- Runpod escalation for hard reasoning (after Lane 3 if enabled)
+
+- Auto-merge for safe change classes (C4) — later, off by default
+
+  
+
+===============================================================================
+
+END MASTER xv3
