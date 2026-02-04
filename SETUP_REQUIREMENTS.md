@@ -1,194 +1,130 @@
-===============================================================================
-FUTILITY'S — SETUP REQUIREMENTS & TIPS
-===============================================================================
+# Setup Requirements
 
-Read this BEFORE running install.sh
+**Read this before running the installation script.**
 
-===============================================================================
-ACCOUNTS YOU NEED (CREATE THESE FIRST)
-===============================================================================
+---
 
-Create these accounts before you start. All have free tiers.
+## Prerequisites
 
-  □ GitHub          https://github.com
-                    → You'll authorize the server to push to your repo
+Create these accounts before you begin:
 
-  □ DigitalOcean    https://www.digitalocean.com
-                    → Requires credit card (not charged until you create droplet)
-                    → Often has $200 free credit for new accounts
+| Service | URL | Required? | Purpose |
+|---------|-----|-----------|---------|
+| GitHub | github.com | Yes | Code repository and version control |
+| DigitalOcean | digitalocean.com | Yes | Server hosting ($12/month) |
+| Cloudflare | cloudflare.com | Optional | Domain management and DNS |
+| Anthropic | console.anthropic.com | Optional | AI features (Claude API) |
 
-  □ Anthropic       https://console.anthropic.com  (optional, for AI features)
-                    → Create an API key and save it somewhere
+---
 
-  □ Domain          https://namecheap.com or https://cloudflare.com (optional)
-                    → Can use IP address instead for testing
+## What You'll Create During Setup
 
-===============================================================================
-PASSWORDS/LOGINS YOU WILL CREATE
-===============================================================================
+The installation wizard will prompt you to create these credentials:
 
-During setup, YOU will choose these (write them down):
+| Step | Credential | Description | Example |
+|------|------------|-------------|---------|
+| Before script | SSH key passphrase | Protects your SSH key | *(can leave blank)* |
+| Phase 2 | Server username | Your login on the server | `gondor` |
+| Phase 2 | Server password | For sudo commands | *(you choose)* |
+| Phase 7 | Web interface PIN | Access code for the app | `5821` |
 
-  ┌─────────────────────────────────────────────────────────────────────────┐
-  │ STEP          │ WHAT YOU CREATE        │ EXAMPLE                       │
-  ├─────────────────────────────────────────────────────────────────────────┤
-  │ DigitalOcean  │ SSH key passphrase     │ (can be blank for no password)│
-  │ Phase 2       │ Server username        │ gondor                        │
-  │ Phase 2       │ Server user password   │ (you choose, for sudo)        │
-  │ Phase 7       │ Web interface PIN      │ 5821 (4-8 digits you remember)│
-  └─────────────────────────────────────────────────────────────────────────┘
+**Write these down before you start.**
 
-===============================================================================
-STEP-BY-STEP AUTHORIZATION GUIDE
-===============================================================================
+---
 
-BEFORE THE SCRIPT (do these manually)
-─────────────────────────────────────
+## Authorization by Phase
 
-1. CREATE DIGITALOCEAN DROPLET
-   Where: DigitalOcean dashboard → Create → Droplets
-   Auth needed: Your DigitalOcean account
-   You choose:
-     • Region (pick closest to you)
-     • Size: $12/mo (2GB RAM)
-     • SSH key (see below)
+### Before Running the Script
 
-2. CREATE SSH KEY (on your laptop)
-   Windows PowerShell / Mac Terminal:
-     ssh-keygen -t ed25519 -C "your_email@example.com"
+| Task | Authorization Needed |
+|------|---------------------|
+| Create DigitalOcean droplet | DigitalOcean account + payment method |
+| Create SSH key | None (runs on your computer) |
+| SSH into server | Your SSH key |
 
-   You choose: Passphrase (or press Enter for none)
-   Copy the PUBLIC key to DigitalOcean (Settings → Security → Add SSH Key)
+### During the Script
 
-3. GET YOUR DROPLET IP
-   After droplet creates, copy the IP address (e.g., 167.99.123.45)
+| Phase | What Happens | Authorization |
+|-------|--------------|---------------|
+| 1 | System updates | None (automatic) |
+| 2 | Create server user | **You create:** username + password |
+| 3 | Install Node.js | None (automatic) |
+| 4 | Install Caddy | None (automatic) |
+| 5 | GitHub CLI setup | **GitHub login** via browser |
+| 6 | Generate deploy key | **Manual:** Add key to GitHub repo |
+| 7 | Configuration | **You enter:** domain, repo, PIN |
+| 8-12 | App deployment | None (automatic) |
 
+### Manual Steps (Script Will Pause)
 
-DURING THE SCRIPT
-─────────────────
+1. **Phase 2** — After creating the server user, you must:
+   - Open a new terminal
+   - SSH in as the new user: `ssh username@YOUR_IP`
+   - Run the script again
 
-Phase 1: SYSTEM SETUP
-  Auth: None (runs automatically)
-  Creates: Nothing
+2. **Phase 5** — GitHub CLI authentication:
+   - Browser window opens
+   - Log into GitHub
+   - Authorize the CLI
 
-Phase 2: CREATE USER
-  ★ YOU CREATE: Username (e.g., "gondor")
-  ★ YOU CREATE: Password for that user (for sudo commands)
-  Auth: None
+3. **Phase 6** — Deploy key setup:
+   - Copy the displayed SSH public key
+   - Go to GitHub → Your Repo → Settings → Deploy keys
+   - Add key with "Allow write access" checked
 
-  ⚠️  SCRIPT WILL EXIT HERE - you must:
-      1. Open NEW terminal
-      2. SSH as new user: ssh gondor@YOUR_IP
-      3. Run script again: bash install.sh
+4. **Phase 11** — If using a domain:
+   - Add DNS A record pointing to your server IP
+   - Wait 5-30 minutes for propagation
 
-Phase 3: INSTALL NODE.JS
-  Auth: None (runs automatically)
-  Creates: Nothing
+---
 
-Phase 4: INSTALL CADDY
-  Auth: None (runs automatically)
-  Creates: Nothing
+## Checklist
 
-Phase 5: GITHUB CLI
-  ★ AUTH REQUIRED: GitHub account
-  How: Script opens browser, you log into GitHub and authorize
-  Creates: Nothing new (uses existing GitHub account)
+**Have ready before starting:**
 
-Phase 6: DEPLOY KEY
-  Auth: None (generates automatically)
-  Creates: SSH key pair for server→GitHub
+- [ ] GitHub account (logged in via browser)
+- [ ] DigitalOcean account with payment method
+- [ ] Droplet created (Ubuntu 22.04, $12/month tier)
+- [ ] Droplet IP address copied
+- [ ] Terminal or PowerShell open
+- [ ] Decided on: server username, server password, web PIN
+- [ ] *(Optional)* Anthropic API key
+- [ ] *(Optional)* Domain name
 
-  ⚠️  MANUAL STEP: Copy the displayed key to GitHub
-      1. Go to your repo on GitHub
-      2. Settings → Deploy keys → Add deploy key
-      3. Paste key, check "Allow write access"
-      4. Click Add key
+---
 
-Phase 7: CONFIGURATION
-  ★ YOU ENTER: Domain name (or press Enter to use IP)
-  ★ YOU ENTER: GitHub repo (e.g., "yourname/MVP-FutilitySSOT")
-  ★ YOU CREATE: PIN for web interface (4-8 digits)
-  ★ YOU ENTER: Anthropic API key (optional, press Enter to skip)
+## Time Estimate
 
-Phase 8: CLONE REPO
-  Auth: Uses deploy key from Phase 6
-  Creates: Nothing
+| Task | Duration |
+|------|----------|
+| Account creation | 10-15 min (one time) |
+| Droplet creation | 2-3 min |
+| Running install.sh | 15-20 min |
+| DNS propagation | 5-30 min (if using domain) |
+| **Total** | **~45 minutes** |
 
-Phase 9: CREATE APP
-  Auth: None (runs automatically)
-  Creates: Nothing
+---
 
-Phase 10: START APP
-  Auth: None (runs automatically)
-  Creates: Nothing
+## Cost Summary
 
-Phase 11: CONFIGURE WEB SERVER
-  Auth: None (runs automatically)
-  Creates: Nothing
+| Item | Cost |
+|------|------|
+| DigitalOcean droplet | $12/month |
+| Domain name | $3-15/year *(optional)* |
+| Anthropic API | ~$5-15/month *(usage-based, optional)* |
+| **Minimum** | **$12/month** |
 
-  ⚠️  IF USING DOMAIN: Make sure DNS points to your droplet IP
-      Cloudflare/Namecheap → DNS → A record → your droplet IP
+---
 
-Phase 12: DONE!
-  Your site is live at https://yourdomain.com (or http://YOUR_IP)
-  Log in with the PIN you created in Phase 7
+## Troubleshooting
 
-===============================================================================
-QUICK REFERENCE: WHAT TO HAVE READY
-===============================================================================
+| Problem | Solution |
+|---------|----------|
+| "Permission denied" on SSH | Check SSH key path: `ssh -i ~/.ssh/id_ed25519 user@IP` |
+| "Repository not found" | Verify deploy key added to GitHub with write access |
+| Site not loading | Run `pm2 status` and `sudo systemctl status caddy` |
+| Domain not working | Check DNS at dnschecker.org; wait for propagation |
 
-  □ GitHub account logged in (in a browser)
-  □ DigitalOcean account with droplet created
-  □ Droplet IP address copied
-  □ Terminal/PowerShell open
-  □ This list of things you'll create:
-      • Server username: _______________
-      • Server password: _______________
-      • Web PIN: _______________
-  □ (Optional) Anthropic API key copied
-  □ (Optional) Domain name purchased
+---
 
-===============================================================================
-COMMON ISSUES
-===============================================================================
-
-"Permission denied" when SSH'ing
-  → Make sure you're using the right SSH key
-  → ssh -i ~/.ssh/id_ed25519 user@IP
-
-"Repository not found" during clone
-  → Deploy key not added to GitHub, or wrong repo name
-  → Check: Settings → Deploy keys on your GitHub repo
-
-Site not loading after setup
-  → Check if app is running: pm2 status
-  → Check Caddy: sudo systemctl status caddy
-  → Check firewall: sudo ufw status
-
-Domain not working
-  → DNS takes 5-30 minutes to propagate
-  → Check at: https://dnschecker.org
-  → Make sure A record points to your droplet IP
-
-===============================================================================
-TIME ESTIMATE
-===============================================================================
-
-  Creating accounts:     10-15 min (one time)
-  Creating droplet:      5 min
-  Running install.sh:    15-20 min
-  DNS propagation:       5-30 min (if using domain)
-                         ─────────
-  Total first time:      ~45 min
-
-===============================================================================
-COST SUMMARY
-===============================================================================
-
-  DigitalOcean droplet:  $12/month
-  Domain (optional):     $3-15/year
-  Anthropic API:         ~$5-15/month (usage based)
-                         ────────────
-  Minimum to start:      $12/month
-
-===============================================================================
+**Next step:** [GAMEPLAN.md](GAMEPLAN.md) for detailed walkthrough, or just run `bash install.sh`
